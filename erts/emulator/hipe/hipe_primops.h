@@ -98,7 +98,7 @@ PRIMOP_LIST(am_debug_native_called, &nbif_hipe_bifs_debug_native_called)
 #if defined(__powerpc__) || defined(__ppc__) || defined(__powerpc64__)
 #include "hipe_ppc_primops.h"
 #endif
-#if defined(__arm__)
+#if defined(__arm__) || defined(__aarch64__)
 #include "hipe_arm_primops.h"
 #endif
 

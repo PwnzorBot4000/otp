@@ -887,7 +887,7 @@ type(erlang, system_info, 1, Xs, Opaques) ->
 		   ['heap_type'] ->
 		     t_atom('private');
 		   ['hipe_architecture'] ->
-		     t_atoms(['amd64', 'arm', 'powerpc', 'ppc64',
+		     t_atoms(['aarch64', 'amd64', 'arm', 'powerpc', 'ppc64',
 			      'undefined', 'ultrasparc', 'x86']);
 		   ['info'] ->
 		     t_binary();

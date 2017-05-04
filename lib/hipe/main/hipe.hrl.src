@@ -310,7 +310,8 @@
 -type comp_options() :: [comp_option()].
 
 -type hipe_architecture() ::
-		'amd64' | 'arm' | 'powerpc' | 'ppc64' | 'ultrasparc' | 'x86'.
+		'aarch64' | 'amd64' | 'arm' | 'powerpc' | 'ppc64' | 'ultrasparc' |
+		'x86'.
 
 -type hipe_map()       :: [{non_neg_integer(),
 	                    'unknown' | {'reg' | 'fp_reg' | 'spill',

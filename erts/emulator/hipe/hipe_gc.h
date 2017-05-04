@@ -34,7 +34,7 @@
 #if defined(__powerpc__) || defined(__ppc__) || defined(__powerpc64__)
 #include "hipe_ppc_gc.h"
 #endif
-#if defined(__arm__)
+#if defined(__arm__) || defined(__aarch64__)
 #include "hipe_arm_gc.h"
 #endif
 

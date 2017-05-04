@@ -72,6 +72,7 @@
 -define(HPPC_TAG,"HPPC").
 -define(HP64_TAG,"HP64").
 -define(HARM_TAG,"HARM").
+-define(HR64_TAG,"HR64").
 -define(HX86_TAG,"HX86").
 -define(HA64_TAG,"HA64").
 
@@ -84,6 +85,7 @@
 
 chunk_name(Architecture) ->
   case Architecture of
+    aarch64 ->    ?HR64_TAG; %% HiPE, aarch64 (implicit: 64-bit, Linux)
     amd64 ->      ?HA64_TAG; %% HiPE, x86_64, (implicit: 64-bit, Unix)
     arm ->	  ?HARM_TAG; %% HiPE, arm, v5 (implicit: 32-bit, Linux)
     powerpc ->    ?HPPC_TAG; %% HiPE, PowerPC (implicit: 32-bit, Linux)
@@ -271,6 +273,7 @@ find_callee_mfas(Patches, Architecture) when is_list(Patches) ->
 
 needs_trampolines(Architecture) ->
   case Architecture of
+    aarch64 -> true;
     arm -> true;
     powerpc -> true;
     ppc64 -> true;

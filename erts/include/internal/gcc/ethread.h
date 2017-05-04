@@ -131,7 +131,7 @@
 #  undef ETHR_GCC_VOLATILE_LOAD_IS_ATOMIC_LOAD__
 #  define ETHR_GCC_VOLATILE_LOAD_IS_ATOMIC_LOAD__ ETHR_GCC_VOLATILE_BIT_MASK__
 
-#elif defined(__arm__)
+#elif defined(__arm__) || defined(__aarch64__)
 
 /* volatile stores are problematic on some machines... */
 #  undef ETHR_GCC_VOLATILE_LOAD_IS_ATOMIC_LOAD__

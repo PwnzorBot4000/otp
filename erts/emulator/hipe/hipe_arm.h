@@ -37,7 +37,11 @@ static __inline__ int hipe_word32_address_ok(void *address)
 /* Native stack growth direction. */
 #define HIPE_NSTACK_GROWS_DOWN
 
+#if defined(__aarch64__)
+#define hipe_arch_name	am_aarch64
+#else
 #define hipe_arch_name	am_arm
+#endif
 
 extern void hipe_arm_inc_stack(void);
 

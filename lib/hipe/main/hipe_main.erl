@@ -555,6 +555,8 @@ rtl_to_native(MFA, LinearRTL, Options, DebugState) ->
 	hipe_ppc_main:rtl_to_ppc(MFA, LinearRTL, Options);
       arm ->
 	hipe_arm_main:rtl_to_arm(MFA, LinearRTL, Options);
+      aarch64 ->
+	hipe_arm_main:rtl_to_arm(MFA, LinearRTL, Options);
       x86 ->
 	hipe_x86_main:rtl_to_x86(MFA, LinearRTL, Options);
       amd64 ->

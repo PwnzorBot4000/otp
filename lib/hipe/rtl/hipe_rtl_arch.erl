@@ -86,6 +86,8 @@ first_virtual_reg() ->
       hipe_ppc_registers:first_virtual();
     arm ->
       hipe_arm_registers:first_virtual();
+    aarch64 ->
+      hipe_arm_registers:first_virtual();
     x86 ->
       hipe_x86_registers:first_virtual();
     amd64 ->
@@ -101,6 +103,8 @@ heap_pointer() ->	% {GetHPInsn, HPReg, PutHPInsn}
     ppc64 ->
       heap_pointer_from_reg(hipe_ppc_registers:heap_pointer());
     arm ->
+      heap_pointer_from_reg(hipe_arm_registers:heap_pointer());
+    aarch64 ->
       heap_pointer_from_reg(hipe_arm_registers:heap_pointer());
     x86 ->
       x86_heap_pointer();
@@ -147,6 +151,8 @@ heap_limit() ->	% {GetHLIMITInsn, HLIMITReg}
       heap_limit_from_pcb();
     arm ->
       heap_limit_from_pcb();
+    aarch64 ->
+      heap_limit_from_pcb();
     x86 ->
       heap_limit_from_reg(hipe_x86_registers:heap_limit());
     amd64 ->
@@ -170,6 +176,8 @@ fcalls() ->	% {GetFCallsInsn, FCallsReg, PutFCallsInsn}
     ppc64 ->
       fcalls_from_pcb();
     arm ->
+      fcalls_from_pcb();
+    aarch64 ->
       fcalls_from_pcb();
     x86 ->
       fcalls_from_reg(hipe_x86_registers:fcalls());
@@ -195,6 +203,8 @@ reg_name(Reg) ->
     ppc64 ->
       hipe_ppc_registers:reg_name_gpr(Reg);
     arm ->
+      hipe_arm_registers:reg_name_gpr(Reg);
+    aarch64 ->
       hipe_arm_registers:reg_name_gpr(Reg);
     x86 ->
       hipe_x86_registers:reg_name(Reg);
@@ -224,6 +234,8 @@ is_precolored_regnum(RegNum) ->
     ppc64 ->
       hipe_ppc_registers:is_precoloured_gpr(RegNum);
     arm ->
+      hipe_arm_registers:is_precoloured_gpr(RegNum);
+    aarch64 ->
       hipe_arm_registers:is_precoloured_gpr(RegNum);
     x86 ->
       hipe_x86_registers:is_precoloured(RegNum);
@@ -257,6 +269,9 @@ live_at_return() ->
     arm ->
       ordsets:from_list([hipe_rtl:mk_reg(R)
 			 || {R,_} <- hipe_arm_registers:live_at_return()]);
+    aarch64 ->
+      ordsets:from_list([hipe_rtl:mk_reg(R)
+			 || {R,_} <- hipe_arm_registers:live_at_return()]);
     x86 ->
       ordsets:from_list([hipe_rtl:mk_reg(R)
 			 || {R,_} <- hipe_x86_registers:live_at_return()]);
@@ -275,6 +290,7 @@ word_size() ->
     powerpc    -> 4;
     ppc64      -> 8;
     arm	       -> 4;
+    aarch64    -> 4;
     x86        -> 4;
     amd64      -> 8
   end.
@@ -298,6 +314,7 @@ log2_word_size() ->
     powerpc    -> 2;
     ppc64      -> 3;
     arm	       -> 2;
+    aarch64    -> 2;
     x86        -> 2;
     amd64      -> 3
   end.
@@ -313,7 +330,8 @@ endianess() ->
     ppc64      -> big;
     x86        -> little;
     amd64      -> little;
-    arm        -> ?ARM_ENDIANESS
+    arm        -> ?ARM_ENDIANESS;
+    aarch64    -> ?ARM_ENDIANESS
   end.
 
 %%%------------------------------------------------------------------------
@@ -398,6 +416,8 @@ load_big_4(Dst, Base, Offset, Signedness) ->
       %% signedness of the high-order byte doesn't matter.
       %% ARM prefers unsigned byte loads so we'll use that.
       load_big_4_in_pieces(Dst, Base, Offset, unsigned);
+    aarch64 ->
+      load_big_4_in_pieces(Dst, Base, Offset, unsigned);
     _ ->
       load_big_4_in_pieces(Dst, Base, Offset, Signedness)
   end.
@@ -422,6 +442,8 @@ load_little_4(Dst, Base, Offset, Signedness) ->
       %% When loading 4 bytes into a 32-bit register, the
       %% signedness of the high-order byte doesn't matter.
       %% ARM prefers unsigned byte loads so we'll use that.
+      load_little_4_in_pieces(Dst, Base, Offset, unsigned);
+    aarch64 ->
       load_little_4_in_pieces(Dst, Base, Offset, unsigned);
     _ ->
       load_little_4_in_pieces(Dst, Base, Offset, Signedness)
@@ -475,6 +497,8 @@ store_4(Base, Offset, Src) ->
     ppc64 ->
       store_4_directly(Base, Offset, Src);
     arm ->
+      store_big_4_in_pieces(Base, Offset, Src);
+    aarch64 ->
       store_big_4_in_pieces(Base, Offset, Src);
     ultrasparc ->
       store_big_4_in_pieces(Base, Offset, Src);
@@ -564,6 +588,7 @@ fwait_real() ->
     x86 -> [hipe_rtl:mk_call([], 'fwait', [], [], [], not_remote)];
     amd64 -> [hipe_rtl:mk_call([], 'fwait', [], [], [], not_remote)];
     arm -> [];
+    aarch64 -> [];
     powerpc -> [];
     ppc64 -> [];
     ultrasparc -> []
@@ -593,6 +618,8 @@ handle_real_fp_exception() ->
 			hipe_rtl:label_name(ContLbl), [], not_remote),
        ContLbl];
     arm ->
+      [];
+    aarch64 ->
       [];
     powerpc ->
       [];
@@ -630,6 +657,8 @@ proc_pointer() ->	% must not be exported
       hipe_rtl:mk_reg_gcsafe(hipe_ppc_registers:proc_pointer());
     arm ->
       hipe_rtl:mk_reg_gcsafe(hipe_arm_registers:proc_pointer());
+    aarch64 ->
+      hipe_rtl:mk_reg_gcsafe(hipe_arm_registers:proc_pointer());
     x86 ->
       hipe_rtl:mk_reg_gcsafe(hipe_x86_registers:proc_pointer());
     amd64 ->
@@ -656,6 +685,8 @@ nr_of_return_regs() ->
       1;
     %% hipe_ppc_registers:nr_rets();
     arm ->
+      1;
+    aarch64 ->
       1;
     x86 ->
       hipe_x86_registers:nr_rets();

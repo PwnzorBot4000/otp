@@ -549,11 +549,13 @@ check_known_hipe_chunks([]) -> [].
 -define(HPPC_TAG,"HPPC").
 -define(HP64_TAG,"HP64").
 -define(HARM_TAG,"HARM").
+-define(HR64_TAG,"HR64").
 -define(HX86_TAG,"HX86").
 -define(HA64_TAG,"HA64").
 
 is_chunk_tag_hipe_arch(Tag) ->
     case Tag of
+	?HR64_TAG -> {true, aarch64};     %% HiPE, aarch64 (implicit: 64-bit, Linux)
 	?HA64_TAG -> {true, amd64};       %% HiPE, x86_64, (implicit: 64-bit, Unix)
 	?HARM_TAG -> {true, arm};         %% HiPE, arm, v5 (implicit: 32-bit, Linux)
 	?HPPC_TAG -> {true, powerpc};     %% HiPE, PowerPC (implicit: 32-bit, Linux)

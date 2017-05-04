@@ -82,7 +82,7 @@ extern Uint hipe_beam_pc_resume[];
 #include "hipe_amd64_glue.h"
 #elif defined(__powerpc__) || defined(__ppc__) || defined(__powerpc64__)
 #include "hipe_ppc_glue.h"
-#elif defined(__arm__)
+#elif defined(__arm__) || defined(__aarch64__)
 #include "hipe_arm_glue.h"
 #endif
 

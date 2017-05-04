@@ -934,6 +934,8 @@ assemble(CompiledCode, Closures, Exports, Options) ->
           hipe_ppc_assemble:assemble(CompiledCode, Closures, Exports, Options);
         arm ->
           hipe_arm_assemble:assemble(CompiledCode, Closures, Exports, Options);
+        aarch64 ->
+          hipe_arm_assemble:assemble(CompiledCode, Closures, Exports, Options);
         x86 ->
           hipe_x86_assemble:assemble(CompiledCode, Closures, Exports, Options);
         amd64 ->
@@ -1438,6 +1440,8 @@ o1_opts(TargetArch) ->
       Common;
     arm ->
       Common -- [inline_fp]; % Pointless optimising for absent hardware
+    aarch64 ->
+      Common -- [inline_fp]; % Pointless optimising for absent hardware
     x86 ->
       [x87 | Common];        % XXX: Temporary until x86 has sse2
     amd64 ->
@@ -1453,7 +1457,7 @@ o2_opts(TargetArch) ->
   case TargetArch of
     T when T =:= amd64 orelse T =:= ppc64 -> % 64-bit targets
       [icode_range | Common];
-    _ ->      % T \in [arm, powerpc, ultrasparc, x86]
+    _ ->      % T \in [arm, aarch64, powerpc, ultrasparc, x86]
       Common  % [rtl_ssapre | Common];
     end.
 

@@ -631,6 +631,8 @@ case $chk_arch_ in
     armv6hl)	ARCH=arm;;
     armv7l)	ARCH=arm;;
     armv7hl)	ARCH=arm;;
+	aarch64)	ARCH=aarch64;;
+	aarch64_be)	ARCH=aarch64;;
     tile)	ARCH=tile;;
     *)	 	ARCH=noarch;;
 esac
@@ -666,8 +668,12 @@ ppc-8)
 	ARCH=ppc64
 	;;
 arm-8)
-	AC_MSG_RESULT(yes: adjusting ARCH=arm to ARCH=noarch)
-	ARCH=noarch
+	AC_MSG_RESULT(yes: adjusting ARCH=arm to ARCH=aarch64)
+	ARCH=aarch64
+	;;
+aarch64-4)
+	AC_MSG_RESULT(yes: adjusting ARCH=aarch64 to ARCH=arm)
+	ARCH=arm
 	;;
 *)
 	AC_MSG_RESULT(no)
@@ -2821,7 +2827,7 @@ if test "$cross_compiling" != "yes" && test X${enable_hipe} != Xno; then
    	AC_MSG_NOTICE([HiPE disabled as no valid m4 is found in PATH])
   else
   	case "$ARCH-$OPSYS" in
-	    x86-linux|amd64-linux|x86-darwin*|amd64-darwin*|ppc-linux|ppc64-linux|ppc-darwin|arm-linux|amd64-freebsd|x86-freebsd|x86-sol2|amd64-sol2|ultrasparc-linux)
+	    x86-linux|amd64-linux|x86-darwin*|amd64-darwin*|ppc-linux|ppc64-linux|ppc-darwin|arm-linux|aarch64-linux|amd64-freebsd|x86-freebsd|x86-sol2|amd64-sol2|ultrasparc-linux)
       		enable_hipe=yes
       		;;	
   	esac

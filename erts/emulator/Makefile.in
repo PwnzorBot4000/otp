@@ -575,6 +575,7 @@ HIPE_ultrasparc_TAB=hipe/hipe_sparc.tab
 HIPE_ppc_TAB=hipe/hipe_ppc.tab
 HIPE_ppc64_TAB=hipe/hipe_ppc64.tab $(HIPE_ARCH64_TAB)
 HIPE_arm_TAB=hipe/hipe_arm.tab
+HIPE_aarch64_TAB=hipe/hipe_aarch64.tab
 HIPE_ARCH_TAB=$(HIPE_$(ARCH)_TAB)
 BIFS += hipe/hipe_bif0.tab hipe/hipe_bif1.tab hipe/hipe_bif2.tab $(HIPE_ARCH_TAB)
 HIPE_NBIF_FILES=$(TTF_DIR)/hipe_nbif_impl.h $(TTF_DIR)/hipe_nbif_impl.c
@@ -906,6 +907,7 @@ HIPE_ultrasparc_OBJS=$(OBJDIR)/hipe_sparc.o $(OBJDIR)/hipe_sparc_glue.o $(OBJDIR
 HIPE_ppc_OBJS=$(OBJDIR)/hipe_ppc.o $(OBJDIR)/hipe_ppc_glue.o $(OBJDIR)/hipe_ppc_bifs.o $(OBJDIR)/hipe_risc_stack.o
 HIPE_ppc64_OBJS=$(HIPE_ppc_OBJS) $(HIPE_ARCH64_OBJS)
 HIPE_arm_OBJS=$(OBJDIR)/hipe_arm.o $(OBJDIR)/hipe_arm_glue.o $(OBJDIR)/hipe_arm_bifs.o $(OBJDIR)/hipe_risc_stack.o
+HIPE_aarch64_OBJS=$(HIPE_arm_OBJS) $(HIPE_ARCH64_OBJS)
 HIPE_noarch_OBJS=
 HIPE_ARCH_OBJS=$(HIPE_$(ARCH)_OBJS)
 
