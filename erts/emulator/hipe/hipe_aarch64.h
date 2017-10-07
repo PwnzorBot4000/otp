@@ -22,22 +22,15 @@
 #ifndef HIPE_ARM_H
 #define HIPE_ARM_H
 
-extern void hipe_flush_icache_word(void *address);
-extern void hipe_flush_icache_range(void *address, unsigned int nbytes);
+#include "hipe_arm.h"
+#undef hipe_arch_name
 
-/* for stack descriptor hash lookup */
-#define HIPE_RA_LSR_COUNT	2	/* low 2 bits are always zero */
-
-/* for hipe_bifs_{read,write}_{s,u}32 */
-static __inline__ int hipe_word32_address_ok(void *address)
+/* for hipe_bifs_{read,write}_{s,u}64 */
+static __inline__ int hipe_word64_address_ok(void *address)
 {
-    return ((unsigned long)address & 0x3) == 0;
+    return ((unsigned long long)address & 0x3) == 0;
 }
 
-/* Native stack growth direction. */
-#define HIPE_NSTACK_GROWS_DOWN
-#define hipe_arch_name	am_arm
-
-extern void hipe_arm_inc_stack(void);
+#define hipe_arch_name	am_aarch64
 
 #endif /* HIPE_ARM_H */
