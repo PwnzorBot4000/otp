@@ -151,8 +151,10 @@ void hipe_check_pcb(Process *p, const char *file, unsigned line)
 #include "hipe_amd64_glue.h"
 #elif defined(__powerpc__) || defined(__ppc__) || defined(__powerpc64__)
 #include "hipe_ppc_glue.h"
-#elif defined(__arm__) || defined(__aarch64__)
+#elif defined(__arm__)
 #include "hipe_arm_glue.h"
+#elif defined(__aarch64__)
+#include "hipe_aarch64_glue.h"
 #endif
 
 #define BeamOpCode(Op)		((Uint)BeamOp(Op))

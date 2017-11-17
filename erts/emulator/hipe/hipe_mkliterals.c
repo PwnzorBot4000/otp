@@ -1,8 +1,8 @@
 /*
  * %CopyrightBegin%
- * 
+ *
  * Copyright Ericsson AB 2001-2016. All Rights Reserved.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -36,6 +36,31 @@
 #include "erl_message.h"
 /* this sucks, but the compiler needs data for all platforms */
 #include "hipe_arm_asm.h"
+#undef P
+#undef NSP
+#undef HP
+#undef TEMP_LR
+#undef SAVE_CACHED_STATE
+#undef RESTORE_CACHED_STATE
+#undef SAVE_CONTEXT_QUICK
+#undef RESTORE_CONTEXT_QUICK
+#undef SAVE_CONTEXT_BIF
+#undef RESTORE_CONTEXT_BIF
+#undef SAVE_CONTEXT_GC
+#undef RESTORE_CONTEXT_GC
+#undef NR_ARG_REGS
+#undef LOAD_ARG_REGS
+#undef STORE_ARG_REGS
+#undef TEMP_ARG0
+#undef TEMP_ARG1
+#undef TEMP_ARG2
+#undef ARG0
+#undef ARG1
+#undef ARG2
+#undef ARG3
+#undef ARG4
+#undef ARG5
+#include "hipe_aarch64_asm.h"
 #undef P
 #undef NSP
 #undef HP
@@ -350,6 +375,17 @@ static const struct literal {
 #endif
     },
 
+    /* AARCH64 */
+    { "AARCH64_LEAF_WORDS", AARCH64_LEAF_WORDS },
+    { "AARCH64_NR_ARG_REGS", AARCH64_NR_ARG_REGS },
+    { "AARCH64_IS_BIG_ENDIAN",
+#if defined(__aarch64__) && defined(__ARMEB__)
+      1
+#else
+      0
+#endif
+    },
+
     /* PowerPC */
     { "PPC_LEAF_WORDS", PPC_LEAF_WORDS },
     { "PPC_NR_ARG_REGS", PPC_NR_ARG_REGS },
@@ -502,7 +538,7 @@ static const struct rts_param rts_params[] = {
 #endif
     },
     { 45, "P_NRA",
-#if defined(__sparc__) || defined(__powerpc__) || defined(__ppc__) || defined(__powerpc64__) || defined(__arm__)
+#if defined(__sparc__) || defined(__powerpc__) || defined(__ppc__) || defined(__powerpc64__) || defined(__arm__) || defined(__aarch64__)
 	1, offsetof(struct process, hipe.nra)
 #endif
     },
@@ -608,11 +644,11 @@ static void e_define_param(FILE *fp, const struct rts_param *param)
 	if (param->is_defined)
 	    fprintf(fp, "-define(%s, %d).\n", param->name, param->value);
 	else
-	    fprintf(fp, "-define(%s, []).\n", param->name);	
+	    fprintf(fp, "-define(%s, []).\n", param->name);
     }
     else {
 	fprintf(fp, "-define(%s, hipe_bifs:get_rts_param(%u)).\n", param->name, param->nr);
-    }    
+    }
 }
 
 static void print_params(FILE *fp, void (*print_param)(FILE*,const struct rts_param*))
@@ -684,7 +720,7 @@ error:
     fprintf(stderr, "usage: %s [-x] [-c | -e] > output-file\n"
 	    "\t-c\tC header file\n"
 	    "\t-e\tErlang header file\n"
-	    "\t-x\tCross compile. No dependencies to compiling emulator\n",	    
+	    "\t-x\tCross compile. No dependencies to compiling emulator\n",
 	    argv[0]);
     return 1;
 }

@@ -27,8 +27,10 @@
 #include "hipe_stack.h"
 
 /* get NR_ARG_REGS from the arch */
-#if defined(__arm__) || defined(__aarch64__)
+#if defined(__arm__)
 #include "hipe_arm_asm.h"
+#elif defined(__aarch64__)
+#include "hipe_aarch64_asm.h"
 #elif defined(__powerpc__) || defined(__ppc__) || defined(__powerpc64__)
 #include "hipe_ppc_asm.h"
 #elif defined(__sparc__)

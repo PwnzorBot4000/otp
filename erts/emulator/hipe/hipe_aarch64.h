@@ -19,8 +19,8 @@
  */
 
 
-#ifndef HIPE_ARM_H
-#define HIPE_ARM_H
+#ifndef HIPE_AARCH64_H
+#define HIPE_AARCH64_H
 
 #include "hipe_arm.h"
 #undef hipe_arch_name
@@ -33,4 +33,4 @@ static __inline__ int hipe_word64_address_ok(void *address)
 
 #define hipe_arch_name	am_aarch64
 
-#endif /* HIPE_ARM_H */
+#endif /* HIPE_AARCH64_H */

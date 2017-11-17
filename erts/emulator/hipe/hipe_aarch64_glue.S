@@ -36,13 +36,13 @@
  * - 12*8 == 96 bytes for saving x19-x28, fp and lr
  */
 #define ENTER_FROM_C	\
-    sub sp, sp, #96 \
-    stp x19, x20, [sp, #0]  \
-    stp x21, x22, [sp, #16] \
-    stp x23, x24, [sp, #32] \
-    stp x25, x26, [sp, #48] \
-    stp x27, x28, [sp, #64] \
-    stp x29, x30, [sp, #80] \
+    sub sp, sp, #96; \
+    stp x19, x20, [sp, #0];  \
+    stp x21, x22, [sp, #16]; \
+    stp x23, x24, [sp, #32]; \
+    stp x25, x26, [sp, #48]; \
+    stp x27, x28, [sp, #64]; \
+    stp x29, x30, [sp, #80]; \
 	mov	P, x0;	\
 	RESTORE_CACHED_STATE
 
