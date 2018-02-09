@@ -10,10 +10,10 @@ extern void hipe_flush_icache_range(void *address, unsigned int nbytes);
 #define HIPE_RA_LSR_COUNT	3	/* low 3 bits are always zero */
 
 /* for hipe_bifs_{read,write}_{s,u}32 */
-//static __inline__ int hipe_word32_address_ok(void *address)
-//{
-//    return ((unsigned long)address & 0x3) == 0;
-//}
+static __inline__ int hipe_word32_address_ok(void *address)
+{
+    return ((unsigned long)address & 0x3) == 0;
+}
 
 /* Native stack growth direction. */
 #define HIPE_NSTACK_GROWS_DOWN
