@@ -56,6 +56,10 @@ extern void  hipe_free_native_stub(void*);
 #include "hipe_arm.h"
 #include "hipe_arm_asm.h"
 #endif
+#if defined(__aarch64__)
+#include "hipe_aarch64.h"
+//#include "hipe_arm_asm.h"
+#endif
 
 #if !defined(AEXTERN)
 #define AEXTERN(RET,NAME,PROTO)	extern RET NAME PROTO
