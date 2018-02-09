@@ -689,6 +689,7 @@ case $chk_arch_ in
     armv6hl)	ARCH=arm;;
     armv7l)	ARCH=arm;;
     armv7hl)	ARCH=arm;;
+    aarch64)	ARCH=aarch64;;
     tile)	ARCH=tile;;
     e2k)       ARCH=e2k;;
     *)	 	ARCH=noarch;;
