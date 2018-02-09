@@ -1,7 +1,7 @@
 /*
  * %CopyrightBegin%
  *
- * Copyright Ericsson AB 2004-2016. All Rights Reserved.
+ * Copyright Ericsson AB 2005-2016. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,28 +17,14 @@
  *
  * %CopyrightEnd%
  */
+/*
+ * Stack walking helpers for native stack GC procedures.
+ * ARM version.
+ */
+#ifndef HIPE_AARCH64_GC_H
+#define HIPE_AARCH64_GC_H
 
+#include "hipe_aarch64_asm.h"	/* for NR_ARG_REGS */
+#include "hipe_risc_gc.h"
 
-#ifndef HIPE_GC_H
-#define HIPE_GC_H
-
-#if defined(__sparc__)
-#include "hipe_sparc_gc.h"
-#endif
-#if defined(__i386__)
-#include "hipe_x86_gc.h"
-#endif
-#if defined(__x86_64__)
-#include "hipe_amd64_gc.h"
-#endif
-#if defined(__powerpc__) || defined(__ppc__) || defined(__powerpc64__)
-#include "hipe_ppc_gc.h"
-#endif
-#if defined(__arm__)
-#include "hipe_arm_gc.h"
-#endif
-#if defined(__aarch64__)
-#include "hipe_aarch64_gc.h"
-#endif
-
-#endif /* HIPE_GC_H */
+#endif /* HIPE_AARCH64_GC_H */
