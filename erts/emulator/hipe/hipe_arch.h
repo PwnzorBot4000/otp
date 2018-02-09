@@ -58,7 +58,7 @@ extern void  hipe_free_native_stub(void*);
 #endif
 #if defined(__aarch64__)
 #include "hipe_aarch64.h"
-//#include "hipe_arm_asm.h"
+#include "hipe_aarch64_asm.h"
 #endif
 
 #if !defined(AEXTERN)

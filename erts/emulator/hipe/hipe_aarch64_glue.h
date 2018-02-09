@@ -3,7 +3,7 @@
 #ifndef HIPE_AARCH64_GLUE_H
 #define HIPE_AARCH64_GLUE_H
 
-// #include "hipe_arm_asm.h"		/* for NR_ARG_REGS, ARM_LEAF_WORDS */
+#include "hipe_aarch64_asm.h"		/* for NR_ARG_REGS, ARM_LEAF_WORDS */
 // #define NR_LEAF_WORDS			ARM_LEAF_WORDS
 // #define HIPE_ARCH_CALL_TO_NATIVE	hipe_arm_call_to_native
 // #define HIPE_ARCH_RETURN_TO_NATIVE	hipe_arm_return_to_native
