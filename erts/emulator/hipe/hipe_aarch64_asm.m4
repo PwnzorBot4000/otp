@@ -114,24 +114,22 @@ define(NR_ARG_REGS,3)dnl admissible values are 0 to 6, inclusive
  * Argument (parameter) registers.
  */
 
-/*
 define(defarg,`define(ARG$1,`$2')dnl
 #`define ARG'$1	$2'
 )dnl
 
 ifelse(eval(NR_ARG_REGS >= 1),0,,
-`defarg(0,`r1')')dnl
+`defarg(0,`x1')')dnl
 ifelse(eval(NR_ARG_REGS >= 2),0,,
-`defarg(1,`r2')')dnl
+`defarg(1,`x2')')dnl
 ifelse(eval(NR_ARG_REGS >= 3),0,,
-`defarg(2,`r3')')dnl
+`defarg(2,`x3')')dnl
 ifelse(eval(NR_ARG_REGS >= 4),0,,
-`defarg(3,`r4')')dnl
+`defarg(3,`x4')')dnl
 ifelse(eval(NR_ARG_REGS >= 5),0,,
-`defarg(4,`r5')')dnl
+`defarg(4,`x5')')dnl
 ifelse(eval(NR_ARG_REGS >= 6),0,,
-`defarg(5,`r6')')dnl
-*/
+`defarg(5,`x6')')dnl
 
 /*
  * TEMP_ARG0:
