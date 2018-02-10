@@ -54,7 +54,6 @@ define(NR_ARG_REGS,3)dnl admissible values are 0 to 6, inclusive
  * Keeps track of whether context has been saved in the debug build, allowing us
  * to detect when the garbage collector is called when it shouldn't.
  */
- /*
 `#ifdef DEBUG
 #  define SET_GC_UNSAFE(SCRATCH)	\
 	mov	SCRATCH, #1;		\
@@ -66,7 +65,6 @@ define(NR_ARG_REGS,3)dnl admissible values are 0 to 6, inclusive
 #  define SET_GC_UNSAFE(SCRATCH)
 #  define SET_GC_SAFE(SCRATCH)
 #endif'
-*/
 
 /*
  * Context switching macros.
@@ -80,6 +78,7 @@ define(NR_ARG_REGS,3)dnl admissible values are 0 to 6, inclusive
 
 `#define RESTORE_CONTEXT_QUICK	\
 	mov	lr, TEMP_LR'
+*/
 
 `#define SAVE_CACHED_STATE		\
 	str	HP, [P, #P_HP];		\
@@ -91,6 +90,7 @@ define(NR_ARG_REGS,3)dnl admissible values are 0 to 6, inclusive
 	ldr	HP, [P, #P_HP];		\
 	ldr	NSP, [P, #P_NSP]'
 
+/*
 `#define SAVE_CONTEXT_BIF	\
 	mov	TEMP_LR, lr;	\
 	str	HP, [P, #P_HP]'
@@ -145,8 +145,7 @@ ifelse(eval(NR_ARG_REGS >= 6),0,,
  *	Must be a C callee-save register.
  *	Must be otherwise unused in the call path.
  */
- /*
-`#define TEMP_ARG0	r7'
+`#define TEMP_ARG0	x24'
 
 dnl XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 dnl X								X
@@ -170,6 +169,7 @@ define(SAR_N,`ifelse(eval($1 >= 0),0,,`SAR_N(eval($1-1))SAR_1($1)')')dnl
 define(STORE_ARG_REGS,`SAR_N(eval(NR_ARG_REGS-1))')dnl
 `#define STORE_ARG_REGS	'STORE_ARG_REGS
 
+/*
 dnl XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 dnl X								X
 dnl X			hipe_arm_bifs.m4 support		X
