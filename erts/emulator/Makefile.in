@@ -967,6 +967,7 @@ HIPE_ultrasparc_OBJS=$(OBJDIR)/hipe_sparc.o $(OBJDIR)/hipe_sparc_glue.o $(OBJDIR
 HIPE_ppc_OBJS=$(OBJDIR)/hipe_ppc.o $(OBJDIR)/hipe_ppc_glue.o $(OBJDIR)/hipe_ppc_bifs.o $(OBJDIR)/hipe_risc_stack.o
 HIPE_ppc64_OBJS=$(HIPE_ppc_OBJS) $(HIPE_ARCH64_OBJS)
 HIPE_arm_OBJS=$(OBJDIR)/hipe_arm.o $(OBJDIR)/hipe_arm_glue.o $(OBJDIR)/hipe_arm_bifs.o $(OBJDIR)/hipe_risc_stack.o
+HIPE_aarch64_OBJS=$(OBJDIR)/hipe_aarch64.o $(OBJDIR)/hipe_aarch64_glue.o $(OBJDIR)/hipe_aarch64_bifs.o $(OBJDIR)/hipe_risc_stack.o $(HIPE_ARCH64_OBJS)
 HIPE_noarch_OBJS=
 HIPE_ARCH_OBJS=$(HIPE_$(ARCH)_OBJS)
 
@@ -1071,6 +1072,15 @@ $(OBJDIR)/hipe_arm_glue.o:	hipe/hipe_arm_glue.S $(TTF_DIR)/hipe_arm_asm.h \
 $(TTF_DIR)/hipe_arm_bifs.S:	hipe/hipe_arm_bifs.m4 hipe/hipe_arm_asm.m4 \
 	hipe/hipe_bif_list.m4 $(TTF_DIR)/erl_bif_list.h hipe/hipe_gbif_list.h
 $(OBJDIR)/hipe_arm_bifs.o:	$(TTF_DIR)/hipe_arm_bifs.S \
+	$(TTF_DIR)/hipe_literals.h
+
+$(OBJDIR)/hipe_aarch64_glue.o:	hipe/hipe_aarch64_glue.S \
+	$(TTF_DIR)/hipe_aarch64_asm.h hipe/hipe_mode_switch.h \
+	$(TTF_DIR)/hipe_literals.h
+$(TTF_DIR)/hipe_aarch64_bifs.S:	hipe/hipe_aarch64_bifs.m4 \
+	hipe/hipe_aarch64_asm.m4 hipe/hipe_bif_list.m4 \
+	$(TTF_DIR)/erl_bif_list.h hipe/hipe_gbif_list.h
+$(OBJDIR)/hipe_aarch64_bifs.o:	$(TTF_DIR)/hipe_aarch64_bifs.S \
 	$(TTF_DIR)/hipe_literals.h
 
 # Use -fomit-frame-pointer to work around gcc (v4.5.2) bug causing
