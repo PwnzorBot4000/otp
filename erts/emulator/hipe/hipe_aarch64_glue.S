@@ -72,12 +72,12 @@
     ret
 
 /*
- * int hipe_arm_call_to_native(Process *p);
+ * int hipe_aarch64_call_to_native(Process *p);
  * Emulated code recursively calls native code.
  */
-	.global	hipe_arm_call_to_native
-	.type	hipe_arm_call_to_native, %function
-hipe_arm_call_to_native:
+	.global	hipe_aarch64_call_to_native
+	.type	hipe_aarch64_call_to_native, %function
+hipe_aarch64_call_to_native:
 	ENTER_FROM_C
 	/* get argument registers */
 	LOAD_ARG_REGS
@@ -99,12 +99,12 @@ nbif_return:
 	b	.flush_exit
 
 /*
- * int hipe_arm_return_to_native(Process *p);
+ * int hipe_aarch64_return_to_native(Process *p);
  * Emulated code returns to its native code caller.
  */
-	.global	hipe_arm_return_to_native
-	.type	hipe_arm_return_to_native, %function
-hipe_arm_return_to_native:
+	.global	hipe_aarch64_return_to_native
+	.type	hipe_aarch64_return_to_native, %function
+hipe_aarch64_return_to_native:
 	ENTER_FROM_C
 	/* get return value */
 	ldr	x0, [P, #P_ARG0]
@@ -117,12 +117,12 @@ hipe_arm_return_to_native:
     br x16
 
 /*
- * int hipe_arm_tailcall_to_native(Process *p);
+ * int hipe_aarch64_tailcall_to_native(Process *p);
  * Emulated code tailcalls native code.
  */
-	.global	hipe_arm_tailcall_to_native
-	.type	hipe_arm_tailcall_to_native, %function
-hipe_arm_tailcall_to_native:
+	.global	hipe_aarch64_tailcall_to_native
+	.type	hipe_aarch64_tailcall_to_native, %function
+hipe_aarch64_tailcall_to_native:
 	ENTER_FROM_C
 	/* get argument registers */
 	LOAD_ARG_REGS
@@ -133,12 +133,12 @@ hipe_arm_tailcall_to_native:
     br x16
 
 /*
- * int hipe_arm_throw_to_native(Process *p);
+ * int hipe_aarch64_throw_to_native(Process *p);
  * Emulated code throws an exception to its native code caller.
  */
-	.global	hipe_arm_throw_to_native
-	.type	hipe_arm_throw_to_native, %function
-hipe_arm_throw_to_native:
+	.global	hipe_aarch64_throw_to_native
+	.type	hipe_aarch64_throw_to_native, %function
+hipe_aarch64_throw_to_native:
 	ENTER_FROM_C
 	/* invoke the handler */
     ldr	x16, [P, #P_NCALLEE]  /* set by hipe_find_handler() */
