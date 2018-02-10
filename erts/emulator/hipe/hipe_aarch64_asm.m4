@@ -72,13 +72,11 @@ define(NR_ARG_REGS,3)dnl admissible values are 0 to 6, inclusive
  * RESTORE_CONTEXT and RESTORE_CONTEXT_QUICK do not affect
  * the condition register.
  */
- /*
 `#define SAVE_CONTEXT_QUICK	\
-	mov	TEMP_LR, lr'
+	mov	TEMP_LR, x30'
 
 `#define RESTORE_CONTEXT_QUICK	\
-	mov	lr, TEMP_LR'
-*/
+	mov	x30, TEMP_LR'
 
 `#define SAVE_CACHED_STATE		\
 	str	HP, [P, #P_HP];		\
@@ -90,9 +88,8 @@ define(NR_ARG_REGS,3)dnl admissible values are 0 to 6, inclusive
 	ldr	HP, [P, #P_HP];		\
 	ldr	NSP, [P, #P_NSP]'
 
-/*
 `#define SAVE_CONTEXT_BIF	\
-	mov	TEMP_LR, lr;	\
+	mov	TEMP_LR, x30;	\
 	str	HP, [P, #P_HP]'
 
 `#define RESTORE_CONTEXT_BIF	\
@@ -100,15 +97,14 @@ define(NR_ARG_REGS,3)dnl admissible values are 0 to 6, inclusive
 
 `#define SAVE_CONTEXT_GC	\
 	SET_GC_SAFE(TEMP_LR);	\
-	mov	TEMP_LR, lr;	\
-	str	lr, [P, #P_NRA];	\
+	mov	TEMP_LR, x30;	\
+	str	x30, [P, #P_NRA];	\
 	str	NSP, [P, #P_NSP];	\
 	str	HP, [P, #P_HP]'
 
 `#define RESTORE_CONTEXT_GC	\
 	SET_GC_UNSAFE(HP);	\
 	ldr	HP, [P, #P_HP]'
-*/
 
 /*
  * Argument (parameter) registers.
@@ -167,7 +163,6 @@ define(SAR_N,`ifelse(eval($1 >= 0),0,,`SAR_N(eval($1-1))SAR_1($1)')')dnl
 define(STORE_ARG_REGS,`SAR_N(eval(NR_ARG_REGS-1))')dnl
 `#define STORE_ARG_REGS	'STORE_ARG_REGS
 
-/*
 dnl XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 dnl X								X
 dnl X			hipe_arm_bifs.m4 support		X
@@ -186,25 +181,23 @@ define(NBIF_REG_ARG,`NBIF_MOVE_REG($1,ARG$2)')dnl
 define(NBIF_STK_LOAD,`ldr	$1, [NSP, #$2]')dnl
 define(NBIF_STK_ARG,`NBIF_STK_LOAD($1,eval(4*(($2-$3)-1)))')dnl
 define(NBIF_ARG,`ifelse(eval($3 >= NR_ARG_REGS),0,`NBIF_REG_ARG($1,$3)',`NBIF_STK_ARG($1,$2,$3)')')dnl
-*/
 
-`/* #define NBIF_ARG_1_0	'NBIF_ARG(r1,1,0)` */'
-`/* #define NBIF_ARG_2_0	'NBIF_ARG(r1,2,0)` */'
-`/* #define NBIF_ARG_2_1	'NBIF_ARG(r2,2,1)` */'
-`/* #define NBIF_ARG_3_0	'NBIF_ARG(r1,3,0)` */'
-`/* #define NBIF_ARG_3_1	'NBIF_ARG(r2,3,1)` */'
-`/* #define NBIF_ARG_3_2	'NBIF_ARG(r3,3,2)` */'
-`/* #define NBIF_ARG_4_0	'NBIF_ARG(r1,4,0)` */'
-`/* #define NBIF_ARG_4_1	'NBIF_ARG(r2,4,1)` */'
-`/* #define NBIF_ARG_4_2	'NBIF_ARG(r3,4,2)` */'
-`/* #define NBIF_ARG_4_3	'NBIF_ARG(r4,4,3)` */'
-`/* #define NBIF_ARG_5_0	'NBIF_ARG(r1,5,0)` */'
-`/* #define NBIF_ARG_5_1	'NBIF_ARG(r2,5,1)` */'
-`/* #define NBIF_ARG_5_2	'NBIF_ARG(r3,5,2)` */'
-`/* #define NBIF_ARG_5_3	'NBIF_ARG(r4,5,3)` */'
-`/* #define NBIF_ARG_5_4	'NBIF_ARG(r5,5,4)` */'
+`/* #define NBIF_ARG_1_0	'NBIF_ARG(x1,1,0)` */'
+`/* #define NBIF_ARG_2_0	'NBIF_ARG(x1,2,0)` */'
+`/* #define NBIF_ARG_2_1	'NBIF_ARG(x2,2,1)` */'
+`/* #define NBIF_ARG_3_0	'NBIF_ARG(x1,3,0)` */'
+`/* #define NBIF_ARG_3_1	'NBIF_ARG(x2,3,1)` */'
+`/* #define NBIF_ARG_3_2	'NBIF_ARG(x3,3,2)` */'
+`/* #define NBIF_ARG_4_0	'NBIF_ARG(x1,4,0)` */'
+`/* #define NBIF_ARG_4_1	'NBIF_ARG(x2,4,1)` */'
+`/* #define NBIF_ARG_4_2	'NBIF_ARG(x3,4,2)` */'
+`/* #define NBIF_ARG_4_3	'NBIF_ARG(x4,4,3)` */'
+`/* #define NBIF_ARG_5_0	'NBIF_ARG(x1,5,0)` */'
+`/* #define NBIF_ARG_5_1	'NBIF_ARG(x2,5,1)` */'
+`/* #define NBIF_ARG_5_2	'NBIF_ARG(x3,5,2)` */'
+`/* #define NBIF_ARG_5_3	'NBIF_ARG(x4,5,3)` */'
+`/* #define NBIF_ARG_5_4	'NBIF_ARG(x5,5,4)` */'
 
-/*
 dnl
 dnl NBIF_RET(ARITY)
 dnl Generates a return from a native BIF, taking care to pop
@@ -213,12 +206,11 @@ dnl May only be used in BIF/primop wrappers where SAVE_CONTEXT
 dnl has saved LR in TEMP_LR.
 dnl
 define(NSP_RETN,`add	NSP, NSP, #$1
-	mov pc, TEMP_LR')dnl
-define(NSP_RET0,`mov pc, TEMP_LR')dnl
+	br TEMP_LR')dnl
+define(NSP_RET0,`br TEMP_LR')dnl
 define(RET_POP,`ifelse(eval($1 > NR_ARG_REGS),0,0,eval(4*($1 - NR_ARG_REGS)))')dnl
 define(NBIF_RET_N,`ifelse(eval($1),0,`NSP_RET0',`NSP_RETN($1)')')dnl
 define(NBIF_RET,`NBIF_RET_N(eval(RET_POP($1)))')dnl
-*/
 
 `/* #define NBIF_RET_0	'NBIF_RET(0)` */'
 `/* #define NBIF_RET_1	'NBIF_RET(1)` */'
@@ -227,7 +219,7 @@ define(NBIF_RET,`NBIF_RET_N(eval(RET_POP($1)))')dnl
 `/* #define NBIF_RET_4	'NBIF_RET(4)` */'
 `/* #define NBIF_RET_5	'NBIF_RET(5)` */'
 
-/*
+
 dnl
 dnl QUICK_CALL_RET(CFUN,ARITY)
 dnl Used in nocons_nofail and noproc primop interfaces to optimise
@@ -235,7 +227,6 @@ dnl SAVE_CONTEXT_QUICK; bl CFUN; RESTORE_CONTEXT_QUICK; NBIF_RET(ARITY).
 dnl
 define(NBIF_POP_N,`ifelse(eval($1),0,`',`add NSP, NSP, #$1 ; ')')dnl
 define(QUICK_CALL_RET,`NBIF_POP_N(eval(RET_POP($2)))b $1')dnl
-*/
 
 `/* #define QUICK_CALL_RET_F_0 'QUICK_CALL_RET(F,0)` */'
 `/* #define QUICK_CALL_RET_F_1 'QUICK_CALL_RET(F,1)` */'
