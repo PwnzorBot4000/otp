@@ -43,10 +43,10 @@ define(NR_ARG_REGS,3)dnl admissible values are 0 to 6, inclusive
 /*
  * Reserved registers.
  */
- `#define P	x28'
- `#define NSP	x27'
- `#define HP x26'
- `#define TEMP_LR	x25'
+`#define P	x28'
+`#define NSP	x27'
+`#define HP	x26'
+`#define TEMP_LR	x25'
 
 /*
  * Debugging macros
