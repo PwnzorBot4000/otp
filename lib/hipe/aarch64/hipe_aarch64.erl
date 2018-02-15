@@ -58,6 +58,8 @@ mk_label(Label) -> #label{label=Label}.
 is_label(I) -> case I of #label{} -> true; _ -> false end.
 label_label(#label{label=Label}) -> Label.
 
+mk_move(MovOp, S, Dst, Am1) -> #move{movop=MovOp, s=S, dst=Dst, am1=Am1}.
+
 mk_pseudo_li(Dst, Imm) ->
   #pseudo_li{dst=Dst, imm=Imm, label=hipe_gensym:get_next_label(aarch64)}.
 
@@ -70,15 +72,13 @@ mk_pseudo_blr() -> #pseudo_blr{}.
 
 %%% Load an integer constant into a register.
 
-mk_li(_, Value, _) -> % (Dst, Value, Rest)
+mk_li(Dst, Value, Rest) ->
   %% XXX: expand to handle 2-instruction sequences
   case try_aluop_imm('mov', Value) of
-    {_,_} -> % {NewMovOp,Am1} ->
-      exit('unimplemented: try_aluop_imm, case 1');
-      %[mk_move(NewMovOp, false, Dst, Am1) | Rest];
+    {NewMovOp,Am1} ->
+      [mk_move(NewMovOp, false, Dst, Am1) | Rest];
     [] ->
-      exit('unimplemented: try_aluop_imm, case 2')
-      %[mk_pseudo_li(Dst, Value) | Rest]
+      [mk_pseudo_li(Dst, Value) | Rest]
   end.
 
 try_aluop_imm(AluOp, Imm) -> % -> {NewAluOp,Am1} or []
@@ -100,15 +100,22 @@ invert_aluop_imm(AluOp, Imm) ->
     'mov' -> {'mvn', bnot Imm}
   end.
 
-imm_to_am1(Imm) -> imm_to_am1(Imm band 16#FFFFFFFF, 16).
+%%% Create a 'shifter operand'.
+%%% Immediates have to be 16 bits long, however
+%%% immediate - accepting operations can be accompanied by this
+%%% value of 2 bits in size, which denotes the number of positions
+%%% the immediate will be shifted left, which can be 0, 16, 32 or 48.
+%%% Here we are converting a 64-bit value into a
+%%% 16-bit immediate and a 2-bit shifter operand.
+
+imm_to_am1(Imm) -> imm_to_am1(Imm band 16#FFFFFFFFFFFFFFFF, 0).
 imm_to_am1(Imm, RotCnt) ->
-  throw('imm_to_am1 was called!'),
-  if Imm >= 0, Imm =< 255 -> {Imm, RotCnt band 15};
+  if Imm >= 0, Imm =< 65535 -> {Imm, RotCnt band 3};
      true ->
-      NewRotCnt = RotCnt - 1,
-      if NewRotCnt =:= 0 -> []; % full circle, no joy
-	 true ->
-	  NewImm = (Imm bsr 2) bor ((Imm band 3) bsl 30),
+      if (Imm band 16#FFFF) =/= 0 -> []; % Imm can't fit in single op
+     true ->
+      NewRotCnt = RotCnt + 1,
+	  NewImm = Imm bsr 16,
 	  imm_to_am1(NewImm, NewRotCnt)
       end
   end.     
