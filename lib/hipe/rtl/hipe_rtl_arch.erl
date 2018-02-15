@@ -86,6 +86,8 @@ first_virtual_reg() ->
       hipe_ppc_registers:first_virtual();
     arm ->
       hipe_arm_registers:first_virtual();
+    aarch64 ->
+      hipe_aarch64_registers:first_virtual();
     x86 ->
       hipe_x86_registers:first_virtual();
     amd64 ->
@@ -225,6 +227,8 @@ is_precolored_regnum(RegNum) ->
       hipe_ppc_registers:is_precoloured_gpr(RegNum);
     arm ->
       hipe_arm_registers:is_precoloured_gpr(RegNum);
+    aarch64 ->
+      hipe_aarch64_registers:is_precoloured_gpr(RegNum);
     x86 ->
       hipe_x86_registers:is_precoloured(RegNum);
     amd64 ->
@@ -257,6 +261,9 @@ live_at_return() ->
     arm ->
       ordsets:from_list([hipe_rtl:mk_reg(R)
 			 || {R,_} <- hipe_arm_registers:live_at_return()]);
+    aarch64 ->
+      ordsets:from_list([hipe_rtl:mk_reg(R)
+			 || {R,_} <- hipe_aarch64_registers:live_at_return()]);
     x86 ->
       ordsets:from_list([hipe_rtl:mk_reg(R)
 			 || {R,_} <- hipe_x86_registers:live_at_return()]);
@@ -275,6 +282,7 @@ word_size() ->
     powerpc    -> 4;
     ppc64      -> 8;
     arm	       -> 4;
+    aarch64	   -> 8;
     x86        -> 4;
     amd64      -> 8
   end.

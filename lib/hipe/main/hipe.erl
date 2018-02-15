@@ -1439,6 +1439,8 @@ o1_opts(TargetArch) ->
       Common;
     arm ->
       Common -- [inline_fp]; % Pointless optimising for absent hardware
+    aarch64 ->
+      Common -- [inline_fp]; % Pointless optimising (unless NEON is used)
     x86 ->
       [x87 | Common];        % XXX: Temporary until x86 has sse2
     amd64 ->
