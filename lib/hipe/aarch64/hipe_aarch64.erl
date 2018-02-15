@@ -31,6 +31,8 @@
 
      mk_pseudo_blr/0,
 
+	 mk_li/3,
+
 	 mk_defun/8,
 	 defun_mfa/1,
 	 defun_formals/1,
@@ -65,6 +67,51 @@ mk_pseudo_tailcall(FunV, Arity, StkArgs, Linkage) ->
 mk_pseudo_tailcall_prepare() -> #pseudo_tailcall_prepare{}.
 
 mk_pseudo_blr() -> #pseudo_blr{}.
+
+%%% Load an integer constant into a register.
+
+mk_li(_, Value, _) -> % (Dst, Value, Rest)
+  %% XXX: expand to handle 2-instruction sequences
+  case try_aluop_imm('mov', Value) of
+    {_,_} -> % {NewMovOp,Am1} ->
+      exit('unimplemented: try_aluop_imm, case 1');
+      %[mk_move(NewMovOp, false, Dst, Am1) | Rest];
+    [] ->
+      exit('unimplemented: try_aluop_imm, case 2')
+      %[mk_pseudo_li(Dst, Value) | Rest]
+  end.
+
+try_aluop_imm(AluOp, Imm) -> % -> {NewAluOp,Am1} or []
+  case imm_to_am1(Imm) of
+    (Am1={_Imm8,_Imm4}) -> {AluOp, Am1};
+    [] ->
+      case invert_aluop_imm(AluOp, Imm) of
+	{NewAluOp,NewImm} ->
+	  case imm_to_am1(NewImm) of
+	    (Am1={_Imm8,_Imm4}) -> {NewAluOp, Am1};
+	    [] -> []
+	  end;
+	[] -> []
+      end
+  end.
+
+invert_aluop_imm(AluOp, Imm) ->
+  case AluOp of
+    'mov' -> {'mvn', bnot Imm}
+  end.
+
+imm_to_am1(Imm) -> imm_to_am1(Imm band 16#FFFFFFFF, 16).
+imm_to_am1(Imm, RotCnt) ->
+  throw('imm_to_am1 was called!'),
+  if Imm >= 0, Imm =< 255 -> {Imm, RotCnt band 15};
+     true ->
+      NewRotCnt = RotCnt - 1,
+      if NewRotCnt =:= 0 -> []; % full circle, no joy
+	 true ->
+	  NewImm = (Imm bsr 2) bor ((Imm band 3) bsl 30),
+	  imm_to_am1(NewImm, NewRotCnt)
+      end
+  end.     
 
 mk_defun(MFA, Formals, IsClosure, IsLeaf, Code, Data, VarRange, LabelRange) ->
   #defun{mfa=MFA, formals=Formals, code=Code, data=Data,

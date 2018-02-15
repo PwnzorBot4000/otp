@@ -49,6 +49,7 @@ conv_insn(I, Map, Data) ->
     #enter{} -> conv_enter(I, Map, Data);
     #label{} -> conv_label(I, Map, Data);
     #load_atom{} -> conv_load_atom(I, Map, Data);
+    #return{} -> conv_return(I, Map, Data);
     _ -> exit({?MODULE,conv_insn,I})
   end.
 
@@ -72,6 +73,25 @@ conv_load_atom(I, Map, Data) ->
   Src = hipe_rtl:load_atom_atom(I),
   I2 = [hipe_aarch64:mk_pseudo_li(Dst, Src)],
   {I2, Map0, Data}.
+
+mk_move(Dst, Src, Tail) ->
+  case hipe_aarch64:is_temp(Src) of
+    true -> exit("unimplemented"); % [hipe_arm:mk_pseudo_move(Dst, Src) | Tail];
+        % unimplemented: not used by the test code
+    _ -> mk_li(Dst, Src, Tail)
+  end.
+
+conv_return(I, Map, Data) ->
+%% TODO: multiple-value returns
+{[Arg], Map0} = conv_src_list(hipe_rtl:return_varlist(I), Map),
+I2 = mk_move(mk_rv(), Arg,
+         [hipe_aarch64:mk_pseudo_blr()]),
+{I2, Map0, Data}.
+
+%%% Load an integer constant into a register.
+
+mk_li(Dst, Value, Tail) ->
+  hipe_aarch64:mk_li(Dst, Value, Tail).
 
 %%% Convert a 'fun' operand (MFA, prim, or temp)
 
@@ -144,6 +164,11 @@ conv_dst(Opnd, Map) ->
 	  {NewTemp, vmap_bind(Map, Opnd, NewTemp)}
     end
   end.
+
+%%% Create a temp representing the return value register.
+
+mk_rv() ->
+  hipe_aarch64:mk_temp(hipe_aarch64_registers:return_value(), 'tagged').
 
 %%% Map from RTL var/reg operands to temps.
 

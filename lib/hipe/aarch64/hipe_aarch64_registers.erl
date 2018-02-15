@@ -16,15 +16,18 @@
 
 -export([first_virtual/0,
      is_precoloured_gpr/1,
+	 return_value/0,
 	 live_at_return/0
 	 ]).
 
 -include("../rtl/hipe_literals.hrl").
 
+-define(X0, 0).
 -define(X29, 29). % frame pointer
 -define(SP, 31). % stack pointer (restricted use)
 -define(LAST_PRECOLOURED, 31). % must handle both GPR and FPR ranges
 
+-define(RETURN_VALUE, ?X0).
 -define(STACK_POINTER, ?SP).
 -define(PROC_POINTER, ?X29).
 
@@ -34,6 +37,8 @@ first_virtual() -> ?LAST_PRECOLOURED + 1.
 %%% These two tests have the same implementation, but that's
 %%% not something we should cast in stone in the interface. 
 is_precoloured_gpr(R) -> R =< ?LAST_PRECOLOURED.
+
+return_value() -> ?RETURN_VALUE.
 
 live_at_return() ->
   [%%{?LR,untagged},
