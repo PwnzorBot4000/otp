@@ -52,6 +52,7 @@ MODULES=hipe_aarch64 \
 	hipe_aarch64_main \
 	hipe_aarch64_ra \
 	hipe_aarch64_registers \
+	hipe_aarch64_subst \
 	hipe_rtl_to_aarch64
 
 HRL_FILES=hipe_aarch64.hrl

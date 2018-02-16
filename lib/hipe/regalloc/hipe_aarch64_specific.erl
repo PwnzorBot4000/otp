@@ -15,13 +15,19 @@
 -module(hipe_aarch64_specific).
 
 -export([analyze/2,
+    liveout/3,
     labels/2,
     number_of_temporaries/2,
     reverse_postorder/2,
     bb/3,
-    reg_nr/2,
-    def_use/2
+    def_use/2,
+    defines_all_alloc/2,
+    reg_nr/2
 	]).
+
+%% callbacks for hipe_regalloc_prepass, hipe_range_split
+-export([subst_temps/3
+    ]).
 
 reverse_postorder(CFG, _) ->
   hipe_aarch64_cfg:reverse_postorder(CFG).
@@ -30,6 +36,10 @@ reverse_postorder(CFG, _) ->
 
 analyze(CFG, _) ->
   hipe_aarch64_liveness_gpr:analyse(CFG).
+
+liveout(BB_in_out_liveness,Label,_) ->
+  [X || X <- hipe_aarch64_liveness_gpr:liveout(BB_in_out_liveness,Label),
+	hipe_aarch64:temp_is_allocatable(X)].
 
 %% CFG stuff
 
@@ -57,5 +67,17 @@ defines(I, _) ->
   [X || X <- hipe_aarch64_defuse:insn_def_gpr(I),
 	hipe_aarch64:temp_is_allocatable(X)].
 
+defines_all_alloc(I, _) ->
+  hipe_aarch64_defuse:insn_defs_all_gpr(I).
+
 reg_nr(Reg, _) ->
   hipe_aarch64:temp_reg(Reg).
+
+subst_temps(SubstFun, Instr, _) ->
+  hipe_aarch64_subst:insn_temps(
+    fun(Op) ->
+	case hipe_aarch64:temp_is_allocatable(Op) of
+	  true -> SubstFun(Op);
+	  false -> Op
+	end
+    end, Instr).

@@ -14,6 +14,7 @@
 
 -module(hipe_aarch64_defuse).
 -export([insn_def_gpr/1, insn_use_gpr/1]).
+-export([insn_defs_all_gpr/1]).
 -include("hipe_aarch64.hrl").
 
 %%%
@@ -28,6 +29,12 @@ insn_def_gpr(I) ->
     #pseudo_blr{} -> []
     %_ -> [] % temporarily including all default cases explicitly
   end.
+
+insn_defs_all_gpr(I) ->
+case I of
+  #pseudo_call{} -> true;
+  _ -> false
+end.
 
 tailcall_clobbered_gpr() ->
   [hipe_aarch64:mk_temp(R, T)
