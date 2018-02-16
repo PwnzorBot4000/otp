@@ -46,11 +46,17 @@ init(Defun) ->
 
 is_branch(I) ->
   case I of
-    #pseudo_tailcall{} -> true
+    #pseudo_blr{} -> true;
+    #pseudo_tailcall{} -> true;
+    #pseudo_tailcall_prepare{} -> false;
+    #move{} -> false;
+    #pseudo_li{} -> false % to be removed: temporarily handling all false cases here 
+    %_ -> false           % to prevent unhandled cases return false without warning.
   end.
 
 branch_successors(Branch) ->
   case Branch of
+    #pseudo_blr{} -> [];
     #pseudo_tailcall{} -> []
   end.
 
