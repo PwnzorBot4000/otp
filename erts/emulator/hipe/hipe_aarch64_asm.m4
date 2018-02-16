@@ -30,9 +30,7 @@ define(LEAF_WORDS,16)dnl number of stack words for leaf functions
 define(NR_ARG_REGS,3)dnl admissible values are 0 to 6, inclusive
 
 `#define AARCH64_LEAF_WORDS	'LEAF_WORDS
-/*
-`#define ARM_NR_ARG_REGS	'NR_ARG_REGS
-*/
+`#define AARCH64_NR_ARG_REGS	'NR_ARG_REGS
 `#define NR_ARG_REGS	'NR_ARG_REGS
 
 `#ifdef ASM'

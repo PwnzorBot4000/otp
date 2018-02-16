@@ -35,6 +35,31 @@
 #include "erl_bits.h"
 #include "erl_message.h"
 /* this sucks, but the compiler needs data for all platforms */
+#include "hipe_aarch64_asm.h"
+#undef P
+#undef NSP
+#undef HP
+#undef TEMP_LR
+#undef SAVE_CACHED_STATE
+#undef RESTORE_CACHED_STATE
+#undef SAVE_CONTEXT_QUICK
+#undef RESTORE_CONTEXT_QUICK
+#undef SAVE_CONTEXT_BIF
+#undef RESTORE_CONTEXT_BIF
+#undef SAVE_CONTEXT_GC
+#undef RESTORE_CONTEXT_GC
+#undef NR_ARG_REGS
+#undef LOAD_ARG_REGS
+#undef STORE_ARG_REGS
+#undef TEMP_ARG0
+#undef TEMP_ARG1
+#undef TEMP_ARG2
+#undef ARG0
+#undef ARG1
+#undef ARG2
+#undef ARG3
+#undef ARG4
+#undef ARG5
 #include "hipe_arm_asm.h"
 #undef P
 #undef NSP
@@ -338,6 +363,9 @@ static const struct literal {
 
     /* messages */
     { "MSG_NEXT", offsetof(struct erl_mesg, next) },
+
+    /* AARCH64 */
+    { "AARCH64_NR_ARG_REGS", AARCH64_NR_ARG_REGS },
 
     /* ARM */
     { "ARM_LEAF_WORDS", ARM_LEAF_WORDS },

@@ -24,12 +24,57 @@ insn_def_gpr(I) ->
     #move{dst=Dst} -> [Dst]
   end.
 
+tailcall_clobbered_gpr() ->
+  [hipe_arm:mk_temp(R, T)
+   || {R,T} <- hipe_aarch64_registers:tailcall_clobbered() ++ all_fp_pseudos()].
+
+all_fp_pseudos() -> [].	% XXX: for now
+
 insn_use_gpr(I) ->
   case I of
-    #move{am1=Am1} -> am1_use(Am1, [])
+    #move{am1=Am1} -> am1_use(Am1, []);
+    #pseudo_tailcall{funv=FunV,arity=Arity,stkargs=StkArgs} ->
+      addargs(StkArgs, addtemps(tailcall_clobbered_gpr(), funv_use(FunV, arity_use_gpr(Arity))))
+  end.
+
+addargs([Arg|Args], Set) ->
+  addargs(Args, addarg(Arg, Set));
+addargs([], Set) ->
+  Set.
+
+addarg(Arg, Set) ->
+  case Arg of
+    #aarch64_temp{} -> addtemp(Arg, Set);
+    _ -> Set
+  end.
+
+arity_use_gpr(Arity) ->
+  [hipe_aarch64:mk_temp(R, 'tagged')
+   || R <- hipe_aarch64_registers:args(Arity)].
+
+funv_use(FunV, Set) ->
+  case FunV of
+    #aarch64_temp{} -> addtemp(FunV, Set);
+    _ -> Set
   end.
 
 am1_use(Am1, Set) ->
   case Am1 of
     {_,_} -> Set
+  end.
+
+%%%
+%%% Auxiliary operations on sets of temps
+%%% These sets are small. No point using gb_trees, right?
+%%%
+
+addtemps([Arg|Args], Set) ->
+  addtemps(Args, addtemp(Arg, Set));
+addtemps([], Set) ->
+  Set.
+
+addtemp(Temp, Set) ->
+  case lists:member(Temp, Set) of
+    false -> [Temp|Set];
+    _ -> Set
   end.
