@@ -20,7 +20,7 @@ rtl_to_aarch64(MFA, RTL, Options) ->
   CFG1 = hipe_aarch64_cfg:init(Defun1),
   %% io:format("~w: after translate\n", [?MODULE]),
   %% hipe_arm_pp:pp(Defun1),
-  CFG2 = hipe_arm_ra:ra(CFG1, Options), %TODO
+  CFG2 = hipe_aarch64_ra:ra(CFG1, Options),
   %% io:format("~w: after regalloc\n", [?MODULE]),
   %% hipe_arm_pp:pp(hipe_arm_cfg:linearise(CFG2)),
   CFG3 = hipe_arm_frame:frame(CFG2), %TODO

@@ -52,7 +52,7 @@
 %%%
 %%% Note: am1 represents all 11 variants of "Adressing Mode 1".
 %%%
-%%% am1		::= {imm8,imm4}		imm8 rotated right 2*imm4 bits
+%%% am1		::= {imm16,imm2}	imm16 rotated left 16*imm2 bits
 %%%		  | src
 %%%		  | {src,rrx}
 %%%		  | {src,shiftop,imm5}
