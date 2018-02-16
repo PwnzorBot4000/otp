@@ -17,6 +17,7 @@
 -export([first_virtual/0,
      is_precoloured_gpr/1,
 	 return_value/0,
+	 lr/0,
 	 args/1,
      tailcall_clobbered/0,
 	 live_at_return/0
@@ -63,6 +64,8 @@ first_virtual() -> ?LAST_PRECOLOURED + 1.
 is_precoloured_gpr(R) -> R =< ?LAST_PRECOLOURED.
 
 return_value() -> ?RETURN_VALUE.
+
+lr() -> ?LR.
 
 args(Arity) when is_integer(Arity) ->
   N = erlang:min(Arity, ?AARCH64_NR_ARG_REGS),

@@ -21,7 +21,12 @@
 %%%
 insn_def_gpr(I) ->
   case I of
-    #move{dst=Dst} -> [Dst]
+    #move{dst=Dst} -> [Dst];
+    #pseudo_li{dst=Dst} -> [Dst];
+    #pseudo_tailcall{} -> [];
+    #pseudo_tailcall_prepare{} -> tailcall_clobbered_gpr();
+    #pseudo_blr{} -> []
+    %_ -> [] % temporarily including all default cases explicitly
   end.
 
 tailcall_clobbered_gpr() ->
@@ -33,8 +38,15 @@ all_fp_pseudos() -> [].	% XXX: for now
 insn_use_gpr(I) ->
   case I of
     #move{am1=Am1} -> am1_use(Am1, []);
+    #pseudo_blr{} ->
+      LR = hipe_aarch64:mk_temp(hipe_aarch64_registers:lr(), 'untagged'),
+      RV = hipe_aarch64:mk_temp(hipe_aarch64_registers:return_value(), 'tagged'),
+      [RV, LR];
     #pseudo_tailcall{funv=FunV,arity=Arity,stkargs=StkArgs} ->
-      addargs(StkArgs, addtemps(tailcall_clobbered_gpr(), funv_use(FunV, arity_use_gpr(Arity))))
+      addargs(StkArgs, addtemps(tailcall_clobbered_gpr(), funv_use(FunV, arity_use_gpr(Arity))));
+    #pseudo_li{} -> [];
+    #pseudo_tailcall_prepare{} -> []
+    %_ -> [] % temporarily including all default cases explicitly
   end.
 
 addargs([Arg|Args], Set) ->
