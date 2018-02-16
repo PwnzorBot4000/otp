@@ -14,10 +14,48 @@
 
 -module(hipe_aarch64_specific).
 
--export([analyze/2
+-export([analyze/2,
+    labels/2,
+    number_of_temporaries/2,
+    reverse_postorder/2,
+    bb/3,
+    reg_nr/2,
+    def_use/2
 	]).
+
+reverse_postorder(CFG, _) ->
+  hipe_aarch64_cfg:reverse_postorder(CFG).
 
 %% Liveness stuff
 
 analyze(CFG, _) ->
   hipe_aarch64_liveness_gpr:analyse(CFG).
+
+%% CFG stuff
+
+labels(CFG, _) ->
+  hipe_aarch64_cfg:labels(CFG).
+
+number_of_temporaries(_CFG, _) ->
+  Highest_temporary = hipe_gensym:get_var(aarch64),
+  %% Since we can have temps from 0 to Max adjust by +1.
+  Highest_temporary + 1.
+
+bb(CFG,L,_) ->
+  hipe_aarch64_cfg:bb(CFG,L).
+
+%% AARCH64 stuff
+
+def_use(Instruction, Ctx) ->
+  {defines(Instruction, Ctx), uses(Instruction, Ctx)}.
+
+uses(I, _) ->
+  [X || X <- hipe_aarch64_defuse:insn_use_gpr(I),
+	hipe_aarch64:temp_is_allocatable(X)].
+
+defines(I, _) ->
+  [X || X <- hipe_aarch64_defuse:insn_def_gpr(I),
+	hipe_aarch64:temp_is_allocatable(X)].
+
+reg_nr(Reg, _) ->
+  hipe_aarch64:temp_reg(Reg).

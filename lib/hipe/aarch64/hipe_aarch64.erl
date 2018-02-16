@@ -17,6 +17,8 @@
 	 mk_temp/2,
      mk_new_temp/1,
 	 is_temp/1,
+     temp_reg/1,
+	 temp_is_allocatable/1,
 
 	 mk_mfa/3,
 
@@ -51,6 +53,8 @@ mk_new_temp(Type, Allocatable) ->
   mk_temp(hipe_gensym:get_next_var(aarch64), Type, Allocatable).
 mk_new_temp(Type) -> mk_new_temp(Type, true).
 is_temp(X) -> case X of #aarch64_temp{} -> true; _ -> false end.
+temp_reg(#aarch64_temp{reg=Reg}) -> Reg.
+temp_is_allocatable(#aarch64_temp{allocatable=A}) -> A.
 
 mk_mfa(M, F, A) -> #aarch64_mfa{m=M, f=F, a=A}.
 

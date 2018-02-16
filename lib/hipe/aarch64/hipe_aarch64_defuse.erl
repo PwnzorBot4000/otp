@@ -30,7 +30,7 @@ insn_def_gpr(I) ->
   end.
 
 tailcall_clobbered_gpr() ->
-  [hipe_arm:mk_temp(R, T)
+  [hipe_aarch64:mk_temp(R, T)
    || {R,T} <- hipe_aarch64_registers:tailcall_clobbered() ++ all_fp_pseudos()].
 
 all_fp_pseudos() -> [].	% XXX: for now
