@@ -28,6 +28,10 @@
 
 	 mk_pseudo_li/2,
 
+	 is_pseudo_move/1,
+	 pseudo_move_dst/1,
+	 pseudo_move_src/1,
+
      mk_pseudo_tailcall/4,
      mk_pseudo_tailcall_prepare/0,
 
@@ -66,6 +70,10 @@ mk_move(MovOp, S, Dst, Am1) -> #move{movop=MovOp, s=S, dst=Dst, am1=Am1}.
 
 mk_pseudo_li(Dst, Imm) ->
   #pseudo_li{dst=Dst, imm=Imm, label=hipe_gensym:get_next_label(aarch64)}.
+
+is_pseudo_move(I) -> case I of #pseudo_move{} -> true; _ -> false end.
+pseudo_move_dst(#pseudo_move{dst=Dst}) -> Dst.
+pseudo_move_src(#pseudo_move{src=Src}) -> Src.
 
 mk_pseudo_tailcall(FunV, Arity, StkArgs, Linkage) ->
   #pseudo_tailcall{funv=FunV, arity=Arity, stkargs=StkArgs, linkage=Linkage}.

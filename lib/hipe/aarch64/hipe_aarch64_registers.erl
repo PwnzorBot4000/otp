@@ -16,8 +16,11 @@
 
 -export([first_virtual/0,
      is_precoloured_gpr/1,
+     all_precoloured/0,
 	 return_value/0,
 	 lr/0,
+     allocatable_gpr/0,
+	 nr_args/0,
 	 args/1,
      tailcall_clobbered/0,
 	 live_at_return/0
@@ -32,10 +35,29 @@
 -define(X4, 4).
 -define(X5, 5).
 -define(X6, 6).
+-define(X7, 7).
+-define(X8, 8).
+-define(X9, 9).
+-define(X10, 10).
+-define(X11, 11).
+-define(X12, 12).
+-define(X13, 13).
+-define(X14, 14).
+-define(X15, 15).
+-define(X16, 16).
+-define(X17, 17).
+-define(X18, 18).
+-define(X19, 19).
+-define(X20, 20).
+-define(X21, 21).
+-define(X22, 22).
+-define(X23, 23).
+-define(X24, 24).
 -define(X25, 25). % TEMP_LR callee-save
 -define(X26, 26). % heap pointer (HP)
 -define(X27, 27). % native stack pointer (NSP)
 -define(X28, 28). % proc pointer (P)
+-define(X29, 29). % frame pointer
 -define(X30, 30). % link register (LR)
 -define(SP, 31). % C stack pointer (restricted use)
 -define(LAST_PRECOLOURED, 31). % must handle both GPR and FPR ranges
@@ -63,9 +85,32 @@ first_virtual() -> ?LAST_PRECOLOURED + 1.
 %%% not something we should cast in stone in the interface. 
 is_precoloured_gpr(R) -> R =< ?LAST_PRECOLOURED.
 
+all_precoloured() ->
+  %% XXX: SP should be skipped as it never is used anywhere.
+  %% Unfortunately, gaps in the list of precoloured registers
+  %% cause the graph_color register allocator to create bogus
+  %% assignments for those "registers", which in turn causes
+  %% the "precoloured reg must map to itself" sanity check in
+  %% the frame module to signal errors.
+  [ ?X0,  ?X1,  ?X2,  ?X3,  ?X4,  ?X5,  ?X6,  ?X7,
+    ?X8,  ?X9,  ?X10, ?X11, ?X12, ?X13, ?X14, ?X15,
+    ?X16,  ?X17, ?X18, ?X19, ?X20, ?X21, ?X22, ?X23,
+    ?X24,  ?X25, ?X26, ?X27, ?X28, ?X29, ?X30, ?SP].
+
 return_value() -> ?RETURN_VALUE.
 
 lr() -> ?LR.
+
+allocatable_gpr() ->
+  %% x26, x27, and x28 are fixed global registers.
+  %% TODO? r12 may be used by the frame module for large load/store offsets.
+  %% SP is reserved for C.
+  [ ?X0,  ?X1,  ?X2,  ?X3,  ?X4,  ?X5,  ?X6,  ?X7,
+    ?X8,  ?X9,  ?X10, ?X11, ?X12, ?X13, ?X14, ?X15,
+    ?X16,  ?X17, ?X18, ?X19, ?X20, ?X21, ?X22, ?X23,
+    ?X24,  ?X25,                   ?X29, ?X30    ].
+
+nr_args() -> ?ARM_NR_ARG_REGS.
 
 args(Arity) when is_integer(Arity) ->
   N = erlang:min(Arity, ?AARCH64_NR_ARG_REGS),
