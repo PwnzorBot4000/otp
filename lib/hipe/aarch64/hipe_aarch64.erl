@@ -32,6 +32,8 @@
 	 pseudo_move_dst/1,
 	 pseudo_move_src/1,
 
+     is_pseudo_spill_move/1,
+
      mk_pseudo_tailcall/4,
      mk_pseudo_tailcall_prepare/0,
 
@@ -74,6 +76,8 @@ mk_pseudo_li(Dst, Imm) ->
 is_pseudo_move(I) -> case I of #pseudo_move{} -> true; _ -> false end.
 pseudo_move_dst(#pseudo_move{dst=Dst}) -> Dst.
 pseudo_move_src(#pseudo_move{src=Src}) -> Src.
+
+is_pseudo_spill_move(I) -> is_record(I, pseudo_spill_move).
 
 mk_pseudo_tailcall(FunV, Arity, StkArgs, Linkage) ->
   #pseudo_tailcall{funv=FunV, arity=Arity, stkargs=StkArgs, linkage=Linkage}.

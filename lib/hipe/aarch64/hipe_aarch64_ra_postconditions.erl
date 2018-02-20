@@ -48,7 +48,12 @@ do_insns([], _TempMap, _Strategy, Accum, DidSpill) ->
 
 do_insn(I, TempMap, Strategy) ->
   case I of
-    #move{} -> do_move(I, TempMap, Strategy)
+    #move{} -> do_move(I, TempMap, Strategy);
+    #pseudo_li{} -> do_pseudo_li(I, TempMap, Strategy);
+    #pseudo_tailcall{} -> do_pseudo_tailcall(I, TempMap, Strategy);
+    #pseudo_blr{} -> {[I], false};
+    #pseudo_tailcall_prepare{} -> {[I], false}
+    %_ -> {[I], false} %temp adding all default cases explicitly
   end.
 
 %%% Fix relevant instruction types.
@@ -59,7 +64,23 @@ do_move(I=#move{dst=Dst,am1=Am1}, TempMap, Strategy) ->
   NewI = I#move{dst=NewDst,am1=NewAm1},
   {FixAm1 ++ [NewI | FixDst], DidSpill1 or DidSpill2}.
 
+do_pseudo_li(I=#pseudo_li{dst=Dst}, TempMap, Strategy) ->
+  {FixDst,NewDst,DidSpill} = fix_dst(Dst, TempMap, Strategy),
+  NewI = I#pseudo_li{dst=NewDst},
+  {[NewI | FixDst], DidSpill}.
+
+do_pseudo_tailcall(I=#pseudo_tailcall{funv=FunV}, TempMap, Strategy) ->
+  {FixFunV,NewFunV,DidSpill} = fix_funv(FunV, TempMap, Strategy),
+  NewI = I#pseudo_tailcall{funv=NewFunV},
+  {FixFunV ++ [NewI], DidSpill}.
+
 %%% Fix Dst and Src operands.
+
+fix_funv(FunV, TempMap, Strategy) ->
+  case FunV of
+    #aarch64_temp{} -> fix_src3(FunV, TempMap, Strategy);
+    _ -> {[], FunV, false}
+  end.
 
 fix_am1(Am1, _, _) ->
   case Am1 of
@@ -68,6 +89,23 @@ fix_am1(Am1, _, _) ->
 
 temp1('new') -> [];
 temp1('fixed') -> hipe_aarch64_registers:temp1().
+
+fix_src3(Src, TempMap, Strategy) ->
+  fix_src(Src, TempMap, temp3(Strategy)).
+
+temp3('new') -> [];
+temp3('fixed') -> hipe_aarch64_registers:temp3().
+
+fix_src(Src, TempMap, RegOpt) ->
+  case temp_is_spilled(Src, TempMap) of
+    true ->
+      NewSrc = clone(Src, RegOpt),
+      {[hipe_aarch64:mk_pseudo_move(NewSrc, Src)],
+       NewSrc,
+       true};
+    _ ->
+      {[], Src, false}
+  end.
 
 fix_dst(Dst, TempMap, Strategy) ->
   fix_dst_common(Dst, TempMap, temp1(Strategy)).

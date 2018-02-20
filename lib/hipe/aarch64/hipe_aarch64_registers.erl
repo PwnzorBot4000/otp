@@ -18,6 +18,9 @@
      is_precoloured_gpr/1,
      all_precoloured/0,
 	 return_value/0,
+	 temp1/0,	% C callee-save, not parameter, may be allocatable
+	 temp2/0,	% not parameter, must not be allocatable (frame)
+	 temp3/0,	% not parameter, may be allocatable
 	 lr/0,
      allocatable_gpr/0,
 	 nr_args/0,
@@ -72,6 +75,8 @@
 -define(ARG5, ?X6).
 
 -define(TEMP1, ?X25).	% stores LR around inc_stack calls, must be C calleE-save
+-define(TEMP2, ?X29).
+-define(TEMP3, ?X24).
 
 -define(RETURN_VALUE, ?X0).
 -define(HEAP_POINTER, ?X26).
@@ -98,6 +103,10 @@ all_precoloured() ->
     ?X24,  ?X25, ?X26, ?X27, ?X28, ?X29, ?X30, ?SP].
 
 return_value() -> ?RETURN_VALUE.
+
+temp1() -> ?TEMP1.
+temp2() -> ?TEMP2.
+temp3() -> ?TEMP3.
 
 lr() -> ?LR.
 

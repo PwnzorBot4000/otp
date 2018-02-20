@@ -49,7 +49,7 @@ ra(CFG0, Options) ->
 		proplists:get_value(regalloc,Options)})
       end,
   %% hipe_arm_pp:pp(hipe_arm_cfg:linearise(CFG2)),
-  hipe_arm_ra_finalise:finalise(CFG2, Coloring, Coloring_fp).
+  hipe_aarch64_ra_finalise:finalise(CFG2, Coloring, Coloring_fp).
 
 ra(CFG, Liveness, SpillIndex, Options, RegAllocMod) ->
   hipe_regalloc_loop:ra(CFG, Liveness, SpillIndex, Options, RegAllocMod,

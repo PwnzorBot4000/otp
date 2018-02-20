@@ -18,6 +18,7 @@
     liveout/3,
     allocatable/1,
     all_precoloured/1,
+    is_precoloured/2,
     labels/2,
     number_of_temporaries/2,
     check_and_rewrite/3,
@@ -25,8 +26,11 @@
     non_alloc/2,
     bb/3,
     def_use/2,
+    uses/2,
+    defines/2,
     defines_all_alloc/2,
     is_move/2,
+    is_spill_move/2,
     reg_nr/2
 	]).
 
@@ -65,6 +69,9 @@ allocatable(no_context) ->
 
 all_precoloured(no_context) ->
   hipe_aarch64_registers:all_precoloured().
+
+is_precoloured(Reg, _) ->
+  hipe_aarch64_registers:is_precoloured_gpr(Reg).
 
 %% CFG stuff
 
@@ -110,6 +117,9 @@ is_move(Instruction, _) ->
       end;
     false -> false
   end.
+
+is_spill_move(Instruction, _) ->
+  hipe_aarch64:is_pseudo_spill_move(Instruction).
 
 reg_nr(Reg, _) ->
   hipe_aarch64:temp_reg(Reg).
