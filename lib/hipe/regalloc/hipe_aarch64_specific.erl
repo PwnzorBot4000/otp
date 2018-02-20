@@ -20,6 +20,7 @@
     all_precoloured/1,
     labels/2,
     number_of_temporaries/2,
+    check_and_rewrite/3,
     reverse_postorder/2,
     non_alloc/2,
     bb/3,
@@ -33,6 +34,9 @@
 -export([update_bb/4,
     subst_temps/3
     ]).
+
+check_and_rewrite(CFG, Coloring, no_context) ->
+  hipe_aarch64_ra_postconditions:check_and_rewrite(CFG, Coloring, 'normal').
 
 reverse_postorder(CFG, _) ->
   hipe_aarch64_cfg:reverse_postorder(CFG).

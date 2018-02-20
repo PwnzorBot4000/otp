@@ -51,6 +51,7 @@ MODULES=hipe_aarch64 \
 	hipe_aarch64_liveness_gpr \
 	hipe_aarch64_main \
 	hipe_aarch64_ra \
+	hipe_aarch64_ra_postconditions \
 	hipe_aarch64_registers \
 	hipe_aarch64_subst \
 	hipe_rtl_to_aarch64
