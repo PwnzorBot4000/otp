@@ -23,8 +23,8 @@ rtl_to_aarch64(MFA, RTL, Options) ->
   CFG2 = hipe_aarch64_ra:ra(CFG1, Options),
   %% io:format("~w: after regalloc\n", [?MODULE]),
   %% hipe_arm_pp:pp(hipe_arm_cfg:linearise(CFG2)),
-  CFG3 = hipe_arm_frame:frame(CFG2), %TODO
-  Defun3 = hipe_arm_cfg:linearise(CFG3), %TODO
+  CFG3 = hipe_aarch64_frame:frame(CFG2),
+  Defun3 = hipe_aarch64_cfg:linearise(CFG3),
   %% io:format("~w: after frame\n", [?MODULE]),
   %% hipe_arm_pp:pp(Defun3),
   Defun4 = hipe_arm_finalise:finalise(Defun3, Options), %TODO

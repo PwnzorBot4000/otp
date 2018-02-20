@@ -37,7 +37,12 @@ ra_insn(I, Map, Accum) ->
 
 ra_insn_1(I, Map) ->
   case I of
-    #move{} -> ra_move(I, Map)
+    #move{} -> ra_move(I, Map);
+    #pseudo_li{} -> ra_pseudo_li(I, Map);
+    #pseudo_tailcall{} -> ra_pseudo_tailcall(I, Map);
+    #pseudo_blr{} -> I;
+    #pseudo_tailcall_prepare{} -> I
+    % _ -> I % temporarily adding all default cases explicitly.
   end.
 
 ra_move(I=#move{dst=Dst,am1=Am1}, Map) ->
@@ -45,12 +50,44 @@ ra_move(I=#move{dst=Dst,am1=Am1}, Map) ->
   NewAm1 = ra_am1(Am1, Map),
   I#move{dst=NewDst,am1=NewAm1}.
 
+ra_pseudo_li(I=#pseudo_li{dst=Dst}, Map) ->
+  NewDst = ra_temp(Dst, Map),
+  I#pseudo_li{dst=NewDst}.
+
+ra_pseudo_tailcall(I=#pseudo_tailcall{funv=FunV,stkargs=StkArgs}, Map) ->
+  NewFunV = ra_funv(FunV, Map),
+  NewStkArgs = ra_args(StkArgs, Map),
+  I#pseudo_tailcall{funv=NewFunV,stkargs=NewStkArgs}.
+
 ra_pseudo_move(I=#pseudo_move{dst=Dst,src=Src}, Map, Accum) ->
   NewDst = ra_temp(Dst, Map),
   NewSrc = ra_temp(Src, Map),
   case NewSrc#aarch64_temp.reg =:= NewDst#aarch64_temp.reg of
     true -> Accum;
     false -> [I#pseudo_move{dst=NewDst,src=NewSrc} | Accum]
+  end.
+
+%%% Tailcall stack arguments.
+
+ra_args([Arg|Args], Map) ->
+  [ra_temp_or_imm(Arg, Map) | ra_args(Args, Map)];
+ra_args([], _) ->
+  [].
+
+ra_temp_or_imm(Arg, Map) ->
+  case hipe_aarch64:is_temp(Arg) of
+    true ->
+      ra_temp(Arg, Map);
+    false ->
+      Arg
+  end.
+
+%%% FunV, Am, and Temp operands.
+
+ra_funv(FunV, Map) ->
+  case FunV of
+    #aarch64_temp{} -> ra_temp(FunV, Map);
+    _ -> FunV
   end.
 
 ra_am1(Am1, _) ->
