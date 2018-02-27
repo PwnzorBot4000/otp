@@ -62,9 +62,8 @@
 %%% Note: am2 can represent the first 3 variants of "Addressing Mode 2",
 %%% i.e., not the pre- or post-indexed variants.
 %%%
-%%% am2		::= #am2{src, sign, am2offset}
+%%% am2		::= #am2{src, am2offset}
 %%% am2offset	::= imm12 | src | {src,rrx} | {src,shiftop,imm5}
-%%% sign	::= + | -
 %%%
 %%% Note: am3 can represent the first 2 variants of "Addressing Mode 3",
 %%% i.e., not the pre- or post-indexed variants.
@@ -78,7 +77,7 @@
 %%% immediate	::= int32 | atom | {label,label_type}
 %%% label_type	::= constant | closure | c_const
 
-%-record(am2, {src, sign, offset}).
+-record(am2, {src, offset}).
 %-record(am3, {src, sign, offset}).
 
 %%% Instructions:

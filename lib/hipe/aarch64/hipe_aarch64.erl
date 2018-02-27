@@ -38,6 +38,9 @@
      mk_pseudo_tailcall/4,
      mk_pseudo_tailcall_prepare/0,
 
+     mk_store/3,
+     mk_store/6,
+
      mk_pseudo_blr/0,
 
 	 mk_li/3,
@@ -70,6 +73,12 @@ mk_label(Label) -> #label{label=Label}.
 is_label(I) -> case I of #label{} -> true; _ -> false end.
 label_label(#label{label=Label}) -> Label.
 
+mk_scratch(Scratch) ->
+  case Scratch of
+    'temp2' -> mk_temp(hipe_aarch64_registers:temp2(), 'untagged');
+    'new' -> mk_new_temp('untagged')
+  end.
+
 mk_move(MovOp, S, Dst, Am1) -> #move{movop=MovOp, s=S, dst=Dst, am1=Am1}.
 
 mk_pseudo_li(Dst, Imm) ->
@@ -85,6 +94,24 @@ mk_pseudo_tailcall(FunV, Arity, StkArgs, Linkage) ->
   #pseudo_tailcall{funv=FunV, arity=Arity, stkargs=StkArgs, linkage=Linkage}.
 
 mk_pseudo_tailcall_prepare() -> #pseudo_tailcall_prepare{}.
+
+% Stores in aarch64 will accept a 12-bit scaled
+% unsigned immediate offset, meaning a range of 0 - 32760.
+% For greater range or negative offsets, we use register offset
+% via a scratch register.
+
+mk_store(StOp, Src, Am2) -> #store{stop=StOp, src=Src, am2=Am2}.
+
+mk_store(StOp, Src, Base, Offset, Scratch, Rest) when is_integer(Offset) ->
+  if Offset >= 0 andalso Offset =< 32760 ->
+      Am2 = #am2{src=Base,offset=Offset},
+      [mk_store(StOp, Src, Am2) | Rest];
+     true ->
+      Index = mk_scratch(Scratch),
+      Am2 = #am2{src=Base,offset=Index},
+      mk_li(Index, Offset,
+	    [mk_store(StOp, Src, Am2) | Rest])
+  end.
 
 mk_pseudo_blr() -> #pseudo_blr{}.
 
