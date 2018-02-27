@@ -105,7 +105,7 @@
 -record(pseudo_tailcall, {funv, arity, stkargs, linkage}).
 -record(pseudo_tailcall_prepare, {}).
 %-record(smull, {dstlo, dsthi, src1, src2}). % cond not included, s not included
-%-record(store, {stop, src, am2}).	% cond not included; strh not included
+-record(store, {stop, src, am2}).	% cond not included; strh not included
 
 %%% Function definitions.
 
