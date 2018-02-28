@@ -23,9 +23,16 @@
 
 	 mk_mfa/3,
 
+     mk_cmp/3,
+
 	 mk_label/1,
 	 is_label/1,
 	 label_label/1,
+
+	 mk_load/3,
+	 mk_load/6,
+
+	 mk_pseudo_bc/4,
 
 	 mk_pseudo_li/2,
 
@@ -44,6 +51,8 @@
      mk_pseudo_blr/0,
 
 	 mk_li/3,
+
+     mk_addi/4,
 
 	 mk_defun/8,
 	 defun_mfa/1,
@@ -69,9 +78,42 @@ temp_is_allocatable(#aarch64_temp{allocatable=A}) -> A.
 
 mk_mfa(M, F, A) -> #aarch64_mfa{m=M, f=F, a=A}.
 
+mk_alu(AluOp, S, Dst, Src, Am1) ->
+  #alu{aluop=AluOp, s=S, dst=Dst, src=Src, am1=Am1}.
+mk_alu(AluOp, Dst, Src, Am1) -> mk_alu(AluOp, false, Dst, Src, Am1).
+
+mk_cmp(CmpOp, Src, Am1) -> #cmp{cmpop=CmpOp, src=Src, am1=Am1}.
+
 mk_label(Label) -> #label{label=Label}.
 is_label(I) -> case I of #label{} -> true; _ -> false end.
 label_label(#label{label=Label}) -> Label.
+
+% Loads in aarch64 will accept a 12-bit scaled
+% unsigned immediate offset, meaning a range of 0 - 32760.
+% For greater range or negative offsets, we use register offset
+% via a scratch register.
+% The scratch register can be the destination register, since
+% its contents are ultimately going to be overridden.
+
+mk_load(LdOp, Dst, Am2) -> #load{ldop=LdOp, dst=Dst, am2=Am2}.
+
+mk_load(LdOp, Dst, Base, Offset, Scratch, Rest) when is_integer(Offset) ->
+  if Offset >= 0 andalso Offset =< 32760 ->
+      Am2 = #am2{src=Base,offset=Offset},
+      [mk_load(LdOp, Dst, Am2) | Rest];
+     true ->
+      Index =
+    begin
+      DstReg = temp_reg(Dst),
+      BaseReg = temp_reg(Base),
+      if DstReg =/= BaseReg -> Dst;
+         true -> mk_scratch(Scratch)
+      end
+    end,
+      Am2 = #am2{src=Base,offset=Index},
+      mk_li(Index, Offset,
+	    [mk_load(LdOp, Dst, Am2) | Rest])
+  end.
 
 mk_scratch(Scratch) ->
   case Scratch of
@@ -80,6 +122,34 @@ mk_scratch(Scratch) ->
   end.
 
 mk_move(MovOp, S, Dst, Am1) -> #move{movop=MovOp, s=S, dst=Dst, am1=Am1}.
+
+mk_pseudo_bc(Cond, TrueLab, FalseLab, Pred) ->
+  if Pred >= 0.5 ->
+      mk_pseudo_bc_simple(negate_cond(Cond), FalseLab,
+			  TrueLab, 1.0-Pred);
+     true ->
+      mk_pseudo_bc_simple(Cond, TrueLab, FalseLab, Pred)
+  end.
+
+mk_pseudo_bc_simple(Cond, TrueLab, FalseLab, Pred) when Pred =< 0.5 ->
+  #pseudo_bc{'cond'=Cond, true_label=TrueLab,
+	     false_label=FalseLab, pred=Pred}.
+
+negate_cond(Cond) ->
+  case Cond of
+    'lt' -> 'ge';	% <, >=
+    'ge' -> 'lt';	% >=, <
+    'gt' -> 'le';	% >, <=
+    'le' -> 'gt';	% <=, >
+    'eq' -> 'ne';	% ==, !=
+    'ne' -> 'eq';	% !=, ==
+    'hi' -> 'ls';	% >u, <=u
+    'ls' -> 'hi';	% <=u, >u
+    'hs' -> 'lo';	% >=u, <u
+    'lo' -> 'hs';	% <u, >=u
+    'vs' -> 'vc';	% overflow, not_overflow
+    'vc' -> 'vs'	% not_overflow, overflow
+  end.
 
 mk_pseudo_li(Dst, Imm) ->
   #pseudo_li{dst=Dst, imm=Imm, label=hipe_gensym:get_next_label(aarch64)}.
@@ -124,6 +194,26 @@ mk_li(Dst, Value, Rest) ->
       [mk_move(NewMovOp, false, Dst, Am1) | Rest];
     [] ->
       [mk_pseudo_li(Dst, Value) | Rest]
+  end.
+
+%%% Add an integer constant. Dst may equal Src,
+%%% in which case temp2 may be clobbered.
+
+mk_addi(Dst, Src, Value, Rest) ->
+  case try_aluop_imm('add', Value) of
+    {NewAluOp,Am1} ->
+      [mk_alu(NewAluOp, Dst, Src, Am1) | Rest];
+    [] ->
+      Tmp =
+	begin
+	  DstReg = temp_reg(Dst),
+	  SrcReg = temp_reg(Src),
+	  if DstReg =:= SrcReg ->
+	      mk_temp(hipe_aarch64_registers:temp2(), 'untagged');
+	     true -> Dst
+	  end
+	end,
+      [mk_pseudo_li(Tmp, Value), mk_alu('add', Dst, Src, Tmp) | Rest]
   end.
 
 try_aluop_imm(AluOp, Imm) -> % -> {NewAluOp,Am1} or []
