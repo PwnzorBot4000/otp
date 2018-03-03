@@ -20,6 +20,7 @@
      temp_reg/1,
 	 temp_type/1,
 	 temp_is_allocatable/1,
+     temp_is_precoloured/1,
 
 	 mk_mfa/3,
 
@@ -86,6 +87,8 @@ is_temp(X) -> case X of #aarch64_temp{} -> true; _ -> false end.
 temp_reg(#aarch64_temp{reg=Reg}) -> Reg.
 temp_type(#aarch64_temp{type=Type}) -> Type.
 temp_is_allocatable(#aarch64_temp{allocatable=A}) -> A.
+temp_is_precoloured(#aarch64_temp{reg=Reg}) ->
+  hipe_aarch64_registers:is_precoloured_gpr(Reg).
 
 mk_mfa(M, F, A) -> #aarch64_mfa{m=M, f=F, a=A}.
 

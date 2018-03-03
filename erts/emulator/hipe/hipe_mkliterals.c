@@ -365,6 +365,7 @@ static const struct literal {
     { "MSG_NEXT", offsetof(struct erl_mesg, next) },
 
     /* AARCH64 */
+    { "AARCH64_LEAF_WORDS", AARCH64_LEAF_WORDS },
     { "AARCH64_NR_ARG_REGS", AARCH64_NR_ARG_REGS },
 
     /* ARM */

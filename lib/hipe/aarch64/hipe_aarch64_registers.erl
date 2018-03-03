@@ -21,6 +21,9 @@
 	 temp1/0,	% C callee-save, not parameter, may be allocatable
 	 temp2/0,	% not parameter, must not be allocatable (frame)
 	 temp3/0,	% not parameter, may be allocatable
+	 heap_pointer/0,
+	 stack_pointer/0,
+	 proc_pointer/0,
 	 lr/0,
      allocatable_gpr/0,
 	 nr_args/0,
@@ -107,6 +110,12 @@ return_value() -> ?RETURN_VALUE.
 temp1() -> ?TEMP1.
 temp2() -> ?TEMP2.
 temp3() -> ?TEMP3.
+
+heap_pointer() -> ?HEAP_POINTER.
+
+stack_pointer() -> ?STACK_POINTER.
+
+proc_pointer() -> ?PROC_POINTER.
 
 lr() -> ?LR.
 

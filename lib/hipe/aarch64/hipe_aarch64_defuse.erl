@@ -13,9 +13,20 @@
 %% limitations under the License.
 
 -module(hipe_aarch64_defuse).
+-export([insn_def_all/1, insn_use_all/1]).
 -export([insn_def_gpr/1, insn_use_gpr/1]).
 -export([insn_defs_all_gpr/1]).
 -include("hipe_aarch64.hrl").
+
+%%%
+%%% Defs and uses for both general-purpose and floating-point registers.
+%%% This is needed for the frame module, alas.
+%%%
+insn_def_all(I) ->
+  insn_def_gpr(I).
+
+insn_use_all(I) ->
+  insn_use_gpr(I).
 
 %%%
 %%% Defs and uses for general-purpose (integer) registers only.
