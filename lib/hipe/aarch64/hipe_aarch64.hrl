@@ -30,8 +30,8 @@
 %%% prim	::= #arm_prim{atom}
 
 -record(aarch64_mfa, {m::atom(), f::atom(), a::arity()}).
-%-record(arm_prim, {prim}).
-%-record(arm_sdesc, {exnlab, fsize, arity::arity(), live}).
+-record(aarch64_prim, {prim}).
+-record(aarch64_sdesc, {exnlab, fsize, arity::arity(), live}).
 -record(aarch64_temp, {reg, type, allocatable}).
 
 %%% Instruction Operands:
@@ -84,8 +84,8 @@
 
 -record(alu, {aluop, s, dst, src, am1}).% cond not included
 %-record(b_fun, {'fun', linkage}).	% known tailcall; cond not included
-%-record(b_label, {'cond', label}).	% local jump
-%-record(bl, {'fun', sdesc, linkage}).	% known recursive call; cond not included
+-record(b_label, {'cond', label}).	% local jump
+-record(bl, {'fun', sdesc, linkage}).	% known recursive call; cond not included
 %-record(blx, {src, sdesc}).		% computed recursive call; cond not included
 -record(cmp, {cmpop, src, am1}).	% cond not included
 %-record(comment, {term}).

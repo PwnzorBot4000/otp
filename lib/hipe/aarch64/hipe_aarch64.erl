@@ -23,7 +23,13 @@
 
 	 mk_mfa/3,
 
+     mk_prim/1,
+
+     mk_bl/3,
+
      mk_cmp/3,
+
+     mk_sdesc/4,
 
 	 mk_label/1,
 	 is_label/1,
@@ -49,6 +55,8 @@
      mk_store/6,
 
      mk_pseudo_blr/0,
+     mk_mflr/1,
+     mk_mtlr/1,
 
 	 mk_li/3,
 
@@ -78,11 +86,21 @@ temp_is_allocatable(#aarch64_temp{allocatable=A}) -> A.
 
 mk_mfa(M, F, A) -> #aarch64_mfa{m=M, f=F, a=A}.
 
+mk_prim(Prim) -> #aarch64_prim{prim=Prim}.
+
 mk_alu(AluOp, S, Dst, Src, Am1) ->
   #alu{aluop=AluOp, s=S, dst=Dst, src=Src, am1=Am1}.
 mk_alu(AluOp, Dst, Src, Am1) -> mk_alu(AluOp, false, Dst, Src, Am1).
 
+mk_b_label(Cond, Label) -> #b_label{'cond'=Cond, label=Label}.
+mk_b_label(Label) -> mk_b_label('al', Label).
+
+mk_bl(Fun, SDesc, Linkage) -> #bl{'fun'=Fun, sdesc=SDesc, linkage=Linkage}.
+
 mk_cmp(CmpOp, Src, Am1) -> #cmp{cmpop=CmpOp, src=Src, am1=Am1}.
+
+mk_sdesc(ExnLab, FSize, Arity, Live) ->
+  #aarch64_sdesc{exnlab=ExnLab, fsize=FSize, arity=Arity, live=Live}.
 
 mk_label(Label) -> #label{label=Label}.
 is_label(I) -> case I of #label{} -> true; _ -> false end.
@@ -184,6 +202,9 @@ mk_store(StOp, Src, Base, Offset, Scratch, Rest) when is_integer(Offset) ->
   end.
 
 mk_pseudo_blr() -> #pseudo_blr{}.
+mk_mflr(Dst) -> mk_move(Dst, mk_lr()).
+mk_mtlr(Src) -> mk_move(mk_lr(), Src).
+mk_lr() -> mk_temp(hipe_aarch64_registers:lr(), 'untagged').
 
 %%% Load an integer constant into a register.
 
