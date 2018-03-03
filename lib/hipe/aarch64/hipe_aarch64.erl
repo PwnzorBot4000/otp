@@ -25,6 +25,9 @@
 
      mk_prim/1,
 
+     mk_b_label/2,
+     mk_b_label/1,
+
      mk_bl/3,
 
      mk_cmp/3,
@@ -140,6 +143,7 @@ mk_scratch(Scratch) ->
   end.
 
 mk_move(MovOp, S, Dst, Am1) -> #move{movop=MovOp, s=S, dst=Dst, am1=Am1}.
+mk_move(Dst, Am1) -> mk_move('mov', false, Dst, Am1).
 
 mk_pseudo_bc(Cond, TrueLab, FalseLab, Pred) ->
   if Pred >= 0.5 ->
