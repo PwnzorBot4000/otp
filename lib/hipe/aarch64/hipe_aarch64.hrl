@@ -83,7 +83,7 @@
 %%% Instructions:
 
 -record(alu, {aluop, s, dst, src, am1}).% cond not included
-%-record(b_fun, {'fun', linkage}).	% known tailcall; cond not included
+-record(b_fun, {'fun', linkage}).	% known tailcall; cond not included
 -record(b_label, {'cond', label}).	% local jump
 -record(bl, {'fun', sdesc, linkage}).	% known recursive call; cond not included
 %-record(blx, {src, sdesc}).		% computed recursive call; cond not included
@@ -95,7 +95,7 @@
 -record(move, {movop, s, dst, am1}).	% cond not included
 -record(pseudo_bc, {'cond', true_label, false_label, pred}).
 -record(pseudo_blr, {}).		% alias for "ret" to help cfg
-%-record(pseudo_bx, {src}).		% alias for "mov pc,src" to help cfg
+-record(pseudo_bx, {src}).		% alias for nonlocal jump to help cfg
 -record(pseudo_call, {funv, sdesc, contlab, linkage}).
 %-record(pseudo_call_prepare, {nrstkargs}).
 -record(pseudo_li, {dst, imm, label}).	% pre-generated label for use by the assembler

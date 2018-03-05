@@ -26,6 +26,8 @@
 
      mk_prim/1,
 
+     mk_b_fun/2,
+
      mk_b_label/2,
      mk_b_label/1,
 
@@ -53,12 +55,17 @@
      is_pseudo_spill_move/1,
 
      mk_pseudo_tailcall/4,
+	 pseudo_tailcall_funv/1,
+	 pseudo_tailcall_stkargs/1,
+	 pseudo_tailcall_linkage/1,
+
      mk_pseudo_tailcall_prepare/0,
 
      mk_store/3,
      mk_store/6,
 
      mk_pseudo_blr/0,
+     mk_bx/1,
      mk_mflr/1,
      mk_mtlr/1,
 
@@ -97,6 +104,8 @@ mk_prim(Prim) -> #aarch64_prim{prim=Prim}.
 mk_alu(AluOp, S, Dst, Src, Am1) ->
   #alu{aluop=AluOp, s=S, dst=Dst, src=Src, am1=Am1}.
 mk_alu(AluOp, Dst, Src, Am1) -> mk_alu(AluOp, false, Dst, Src, Am1).
+
+mk_b_fun(Fun, Linkage) -> #b_fun{'fun'=Fun, linkage=Linkage}.
 
 mk_b_label(Cond, Label) -> #b_label{'cond'=Cond, label=Label}.
 mk_b_label(Label) -> mk_b_label('al', Label).
@@ -187,6 +196,9 @@ is_pseudo_spill_move(I) -> is_record(I, pseudo_spill_move).
 
 mk_pseudo_tailcall(FunV, Arity, StkArgs, Linkage) ->
   #pseudo_tailcall{funv=FunV, arity=Arity, stkargs=StkArgs, linkage=Linkage}.
+pseudo_tailcall_funv(#pseudo_tailcall{funv=FunV}) -> FunV.
+pseudo_tailcall_stkargs(#pseudo_tailcall{stkargs=StkArgs}) -> StkArgs.
+pseudo_tailcall_linkage(#pseudo_tailcall{linkage=Linkage}) -> Linkage.
 
 mk_pseudo_tailcall_prepare() -> #pseudo_tailcall_prepare{}.
 
@@ -209,6 +221,7 @@ mk_store(StOp, Src, Base, Offset, Scratch, Rest) when is_integer(Offset) ->
   end.
 
 mk_pseudo_blr() -> #pseudo_blr{}.
+mk_bx(Src) -> #pseudo_bx{src=Src}.
 mk_mflr(Dst) -> mk_move(Dst, mk_lr()).
 mk_mtlr(Src) -> mk_move(mk_lr(), Src).
 mk_lr() -> mk_temp(hipe_aarch64_registers:lr(), 'untagged').

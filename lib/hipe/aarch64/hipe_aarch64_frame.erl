@@ -62,7 +62,15 @@ do_block([], _, Context, FPoff, RevCode) ->
 do_insn(I, _, Context, FPoff) ->
   case I of
     #pseudo_blr{} ->
-      {do_pseudo_blr(I, Context, FPoff), context_framesize(Context)}
+      {do_pseudo_blr(I, Context, FPoff), context_framesize(Context)};
+    #pseudo_tailcall{} ->
+      {do_pseudo_tailcall(I, Context), context_framesize(Context)};
+    #pseudo_li{} ->
+      {[I], FPoff};
+    #pseudo_tailcall_prepare{} ->
+      {[I], FPoff}
+    %_ ->  % temporarily adding all default cases explicitly.
+    %  {[I], FPoff}
   end.
 
 %%%
@@ -95,12 +103,57 @@ adjust_sp(N, Rest) ->
       hipe_aarch64:mk_addi(SP, SP, N, Rest)
   end.
 
+stack_need(FPoff, StkArity, FunV) ->
+  case FunV of
+    #aarch64_prim{} -> FPoff;
+    #aarch64_mfa{m=M,f=F,a=A} ->
+      case erlang:is_builtin(M, F, A) of
+	true -> FPoff;
+	false -> stack_need_general(FPoff, StkArity)
+      end;
+    _ -> stack_need_general(FPoff, StkArity)
+  end.
+
+stack_need_general(FPoff, StkArity) ->
+  erlang:max(FPoff, FPoff + (?AARCH64_LEAF_WORDS - StkArity) * word_size()).
+
 %%%
 %%% Create stack descriptors for call sites.
 %%%
 
 mk_minimal_sdesc(Context) ->		% for inc_stack_0 calls
   hipe_aarch64:mk_sdesc([], 0, context_arity(Context), {}).
+
+%%%
+%%% Tailcalls.
+%%%
+
+do_pseudo_tailcall(I, Context) -> % always at FPoff=context_framesize(Context)
+  Arity = context_arity(Context),
+  Args = hipe_aarch64:pseudo_tailcall_stkargs(I),
+  FunV = hipe_aarch64:pseudo_tailcall_funv(I),
+  Linkage = hipe_aarch64:pseudo_tailcall_linkage(I),
+  {Insns, FPoff1} = do_tailcall_args(Args, Context),
+  context_need_stack(Context, FPoff1),
+  StkArity = length(Args),
+  FPoff2 = FPoff1 + (Arity - StkArity) * word_size(),
+  context_need_stack(Context, stack_need(FPoff2, StkArity, FunV)),
+  I2 =
+    case FunV of
+      #aarch64_temp{} ->
+	hipe_aarch64:mk_bx(FunV);
+      Fun ->
+	hipe_aarch64:mk_b_fun(Fun, Linkage)
+    end,
+  %% XXX: break out the LR restore, just like for pseudo_blr?
+  restore_lr(context_framesize(Context), Context,
+	     Insns ++ adjust_sp(FPoff2, [I2])).
+
+% TODO: Implement for when num arguments > 0
+do_tailcall_args(Args, Context) when length(Args) == 0 ->
+  {[], context_framesize(Context)};
+do_tailcall_args(_, _) ->
+  throw("Unimplemented").
 
 %%%
 %%% Contexts
@@ -115,6 +168,12 @@ mk_context(Liveness, Formals, Temps, ClobbersLR) ->
   #context{liveness=Liveness,
 	   framesize=FrameSize, arity=length(Formals),
 	   map=Map, clobbers_lr=ClobbersLR, ref_maxstack=RefMaxStack}.
+
+context_need_stack(#context{ref_maxstack=RM}, N) ->
+  M = hipe_bifs:ref_get(RM),
+  if N > M -> hipe_bifs:ref_set(RM, N);
+     true -> []
+  end.
 
 context_maxstack(#context{ref_maxstack=RM}) ->
   hipe_bifs:ref_get(RM).
@@ -278,12 +337,12 @@ mk_sp() ->
 %%% Cons up a 'TEMP1' Temp.
 
 mk_temp1() ->
-  hipe_arm:mk_temp(hipe_aarch64_registers:temp1(), 'untagged').
+  hipe_aarch64:mk_temp(hipe_aarch64_registers:temp1(), 'untagged').
 
 %%% Cons up a 'TEMP2' Temp.
 
 mk_temp2() ->
-  hipe_arm:mk_temp(hipe_aarch64_registers:temp2(), 'untagged').
+  hipe_aarch64:mk_temp(hipe_aarch64_registers:temp2(), 'untagged').
 
 %%% Check if an operand is a pseudo-Temp.
 
