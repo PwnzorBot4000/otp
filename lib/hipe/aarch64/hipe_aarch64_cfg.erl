@@ -46,9 +46,12 @@ init(Defun) ->
 
 is_branch(I) ->
   case I of
+    #b_fun{} -> true;
     #pseudo_blr{} -> true;
     #pseudo_tailcall{} -> true;
     #pseudo_tailcall_prepare{} -> false;
+    #load{} -> false;
+    #alu{} -> false;
     #move{} -> false;
     #pseudo_li{} -> false % to be removed: temporarily handling all false cases here 
     %_ -> false           % to prevent unhandled cases return false without warning.

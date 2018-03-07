@@ -65,6 +65,8 @@ do_insn(I, _, Context, FPoff) ->
       {do_pseudo_blr(I, Context, FPoff), context_framesize(Context)};
     #pseudo_tailcall{} ->
       {do_pseudo_tailcall(I, Context), context_framesize(Context)};
+    #move{} ->
+      {[I], FPoff};
     #pseudo_li{} ->
       {[I], FPoff};
     #pseudo_tailcall_prepare{} ->

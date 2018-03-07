@@ -68,6 +68,7 @@
      mk_bx/1,
      mk_mflr/1,
      mk_mtlr/1,
+     mk_lr/0,
 
 	 mk_li/3,
 
