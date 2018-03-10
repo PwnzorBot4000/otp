@@ -59,6 +59,7 @@ is_branch(I) ->
 
 branch_successors(Branch) ->
   case Branch of
+    #b_fun{} -> [];
     #pseudo_blr{} -> [];
     #pseudo_tailcall{} -> []
   end.
