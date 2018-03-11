@@ -16,18 +16,18 @@
 -export([ra/2]).
 
 ra(CFG0, Options) ->
-  %% hipe_arm_pp:pp(hipe_arm_cfg:linearise(CFG0)),
+  %% hipe_aarch64_pp:pp(hipe_aarch64_cfg:linearise(CFG0)),
   {CFG1, _FPLiveness1, Coloring_fp, SpillIndex}
     = case proplists:get_bool(inline_fp, Options) of
 %%	true ->
-%%	  FPLiveness0 = hipe_arm_specific_fp:analyze(CFG0, no_context),
+%%	  FPLiveness0 = hipe_aarch64_specific_fp:analyze(CFG0, no_context),
 %%	  hipe_regalloc_loop:ra_fp(CFG0, FPLiveness0, Options,
 %%				   hipe_coalescing_regalloc,
-%%				   hipe_arm_specific_fp, no_context);
+%%				   hipe_aarch64_specific_fp, no_context);
 	false ->
 	  {CFG0,undefined,[],0}
       end,
-  %% hipe_arm_pp:pp(hipe_arm_cfg:linearise(CFG1)),
+  %% hipe_aarch64_pp:pp(hipe_aarch64_cfg:linearise(CFG1)),
   GPLiveness1 = hipe_aarch64_specific:analyze(CFG1, no_context),
   {CFG2, _GPLiveness2, Coloring}
     = case proplists:get_value(regalloc, Options, coalescing) of
@@ -48,7 +48,7 @@ ra(CFG0, Options) ->
 	  exit({unknown_regalloc_compiler_option,
 		proplists:get_value(regalloc,Options)})
       end,
-  %% hipe_arm_pp:pp(hipe_arm_cfg:linearise(CFG2)),
+  %% hipe_aarch64_pp:pp(hipe_aarch64_cfg:linearise(CFG2)),
   hipe_aarch64_ra_finalise:finalise(CFG2, Coloring, Coloring_fp).
 
 ra(CFG, Liveness, SpillIndex, Options, RegAllocMod) ->

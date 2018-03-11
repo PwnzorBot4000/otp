@@ -110,7 +110,7 @@ release_docs_spec:
 
 # Please keep this list sorted.
 $(EBIN)/hipe_aarch64_cfg.beam: ../flow/cfg.hrl ../flow/cfg.inc
-$(EBIN)/hipe_arm_frame.beam: ../rtl/hipe_literals.hrl
+$(EBIN)/hipe_aarch64_frame.beam: ../rtl/hipe_literals.hrl
 $(EBIN)/hipe_aarch64_liveness_gpr.beam: ../flow/liveness.inc
 $(EBIN)/hipe_aarch64_registers.beam: ../rtl/hipe_literals.hrl
 $(EBIN)/hipe_rtl_to_aarch64.beam: ../rtl/hipe_rtl.hrl

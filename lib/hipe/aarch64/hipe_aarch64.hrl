@@ -15,19 +15,19 @@
 %%%--------------------------------------------------------------------
 %%% Basic Values:
 %%%
-%%% temp	::= #arm_temp{reg, type, allocatable}
-%%% reg		::= <token from hipe_arm_registers>
+%%% temp	::= #aarch64_temp{reg, type, allocatable}
+%%% reg		::= <token from hipe_aarch64_registers>
 %%% type	::= tagged | untagged
 %%% allocatable	::= true | false
 %%%
-%%% sdesc	::= #arm_sdesc{exnlab, fsize, arity, live}
+%%% sdesc	::= #aarch64_sdesc{exnlab, fsize, arity, live}
 %%% exnlab	::= [] | label
 %%% fsize	::= int32		(frame size in words)
 %%% live	::= <tuple of int32>	(word offsets)
 %%% arity	::= uint8
 %%%
-%%% mfa		::= #arm_mfa{atom, atom, arity}
-%%% prim	::= #arm_prim{atom}
+%%% mfa		::= #aarch64_mfa{atom, atom, arity}
+%%% prim	::= #aarch64_prim{atom}
 
 -record(aarch64_mfa, {m::atom(), f::atom(), a::arity()}).
 -record(aarch64_prim, {prim}).

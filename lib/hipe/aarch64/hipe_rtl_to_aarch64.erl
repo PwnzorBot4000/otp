@@ -76,7 +76,7 @@ conv_load_atom(I, Map, Data) ->
 
 mk_move(Dst, Src, Tail) ->
   case hipe_aarch64:is_temp(Src) of
-    true -> exit("unimplemented"); % [hipe_arm:mk_pseudo_move(Dst, Src) | Tail];
+    true -> throw("unimplemented"); % [hipe_arm:mk_pseudo_move(Dst, Src) | Tail];
         % unimplemented: not used by the test code
     _ -> mk_li(Dst, Src, Tail)
   end.

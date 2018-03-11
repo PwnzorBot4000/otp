@@ -128,7 +128,7 @@ allocatable_gpr() ->
     ?X16,  ?X17, ?X18, ?X19, ?X20, ?X21, ?X22, ?X23,
     ?X24,  ?X25,                   ?X29, ?X30    ].
 
-nr_args() -> ?ARM_NR_ARG_REGS.
+nr_args() -> ?AARCH64_NR_ARG_REGS.
 
 args(Arity) when is_integer(Arity) ->
   N = erlang:min(Arity, ?AARCH64_NR_ARG_REGS),

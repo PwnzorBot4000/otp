@@ -19,35 +19,35 @@ rtl_to_aarch64(MFA, RTL, Options) ->
   Defun1 = hipe_rtl_to_aarch64:translate(RTL),
   CFG1 = hipe_aarch64_cfg:init(Defun1),
   %% io:format("~w: after translate\n", [?MODULE]),
-  %% hipe_arm_pp:pp(Defun1),
+  %% hipe_aarch64_pp:pp(Defun1),
   CFG2 = hipe_aarch64_ra:ra(CFG1, Options),
   %% io:format("~w: after regalloc\n", [?MODULE]),
-  %% hipe_arm_pp:pp(hipe_arm_cfg:linearise(CFG2)),
+  %% hipe_aarch64_pp:pp(hipe_aarch64_pp:linearise(CFG2)),
   CFG3 = hipe_aarch64_frame:frame(CFG2),
   Defun3 = hipe_aarch64_cfg:linearise(CFG3),
   %% io:format("~w: after frame\n", [?MODULE]),
-  %% hipe_arm_pp:pp(Defun3),
+  %% hipe_aarch64_pp:pp(Defun3),
   Defun4 = hipe_aarch64_finalise:finalise(Defun3, Options),
   %% io:format("~w: after finalise\n", [?MODULE]),
-  pp(Defun4, MFA, Options), %TODO
+  pp(Defun4, MFA, Options),
   {native, aarch64, {unprofiled, Defun4}}.
 
 pp(Defun, MFA, Options) ->
   case proplists:get_value(pp_native, Options) of
     true ->
-      hipe_arm_pp:pp(Defun); %TODO
+      hipe_aarch64_pp:pp(Defun);
     {only,Lst} when is_list(Lst) ->
       case lists:member(MFA,Lst) of
 	true ->
-	  hipe_arm_pp:pp(Defun); %TODO
+	  hipe_aarch64_pp:pp(Defun);
 	false ->
 	  ok
       end;
     {only,MFA} ->
-       hipe_arm_pp:pp(Defun); %TODO
+       hipe_aarch64_pp:pp(Defun);
     {file,FileName} ->
       {ok, File} = file:open(FileName, [write,append]),
-      hipe_arm_pp:pp(File, Defun), %TODO
+      hipe_aarch64_pp:pp(File, Defun),
       ok = file:close(File);
     _ ->
       ok

@@ -36,7 +36,27 @@ expand_list([], Accum) ->
 expand_insn(I, Accum) ->
   case I of
     #pseudo_tailcall_prepare{} ->
-      Accum
+      Accum;
+    #pseudo_blr{} ->
+      [I|Accum];
+    #pseudo_li{} ->
+      [I|Accum];
+    #b_fun{} ->
+      [I|Accum];
+    #b_label{} ->
+      [I|Accum];
+    #load{} ->
+      [I|Accum];
+    #store{} ->
+      [I|Accum];
+    #move{} ->
+      [I|Accum];
+    #alu{} ->
+      [I|Accum];
+    #label{} ->
+      [I|Accum]
+    % pseudo_blr is passed directly to assemble, where it will be translated
+    % to a ret instruction.
     %_ ->   % temporarily adding all default cases explicitly.
     %  [I|Accum]
   end.
