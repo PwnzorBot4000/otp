@@ -274,7 +274,8 @@ try_aluop_imm(AluOp, Imm) -> % -> {NewAluOp,Am1} or []
 
 invert_aluop_imm(AluOp, Imm) ->
   case AluOp of
-    'mov' -> {'mvn', bnot Imm}
+    'mov' -> {'mvn', bnot Imm};
+    'add' -> {'sub', -Imm}
   end.
 
 %%% Create a 'shifter operand'.

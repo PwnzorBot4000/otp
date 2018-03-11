@@ -47,10 +47,12 @@ init(Defun) ->
 is_branch(I) ->
   case I of
     #b_fun{} -> true;
+    #b_label{'cond'='al'} -> true;
     #pseudo_blr{} -> true;
     #pseudo_tailcall{} -> true;
     #pseudo_tailcall_prepare{} -> false;
     #load{} -> false;
+    #store{} -> false;
     #alu{} -> false;
     #move{} -> false;
     #pseudo_li{} -> false % to be removed: temporarily handling all false cases here 
@@ -60,6 +62,7 @@ is_branch(I) ->
 branch_successors(Branch) ->
   case Branch of
     #b_fun{} -> [];
+    #b_label{'cond'='al',label=Label} -> [Label];
     #pseudo_blr{} -> [];
     #pseudo_tailcall{} -> []
   end.
