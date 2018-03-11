@@ -48,6 +48,7 @@ RELSYSDIR = $(RELEASE_PATH)/lib/hipe-$(VSN)
 MODULES=hipe_aarch64 \
 	hipe_aarch64_cfg \
 	hipe_aarch64_defuse \
+	hipe_aarch64_finalise \
 	hipe_aarch64_frame \
 	hipe_aarch64_liveness_gpr \
 	hipe_aarch64_main \
