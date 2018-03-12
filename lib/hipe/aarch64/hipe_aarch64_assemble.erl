@@ -205,19 +205,19 @@ translate_insn(I, MFA, ConstMap, Address, PrevImms, PendImms) ->
 
 translate_insn(I) ->	% -> [{Op,Opnd,OrigI}]
   case I of
-    %#alu{} -> do_alu(I);
-    %#b_fun{} -> do_b_fun(I);
+    #alu{} -> do_alu(I);
+    #b_fun{} -> do_b_fun(I);
     %#b_label{} -> do_b_label(I);
     %#bl{} -> do_bl(I);
     %#blx{} -> do_blx(I);
     %#cmp{} -> do_cmp(I);
     %#comment{} -> [];
-    %#label{} -> do_label(I);
-    %#load{} -> do_load(I);
+    #label{} -> do_label(I);
+    #load{} -> do_load(I);
     %#ldrsb{} -> do_ldrsb(I);
-    %#move{} -> do_move(I);
+    #move{} -> do_move(I);
     %% pseudo_b: eliminated by finalise
-    #pseudo_blr{} -> do_pseudo_blr(I)
+    #pseudo_blr{} -> do_pseudo_blr(I);
     %% pseudo_call: eliminated by finalise
     %% pseudo_call_prepare: eliminated by frame
     %% pseudo_li: handled separately
@@ -226,11 +226,45 @@ translate_insn(I) ->	% -> [{Op,Opnd,OrigI}]
     %% pseudo_tailcall: eliminated by frame
     %% pseudo_tailcall_prepare: eliminated by finalise
     %#smull{} -> do_smull(I);
-    %#store{} -> do_store(I)
+    #store{} -> do_store(I)
   end.
+
+do_alu(I) ->
+  #alu{aluop=AluOp,s=S,dst=Dst,src=Src,am1=Am1} = I,
+  NewCond = do_cond('al'),
+  NewS = do_s(S),
+  NewDst = do_reg(Dst),
+  NewSrc = do_reg(Src),
+  NewAm1 = do_am1(Am1),
+  {NewI,NewOpnds} = {AluOp, {NewCond,NewS,NewDst,NewSrc,NewAm1}},
+  [{NewI, NewOpnds, I}].
+
+do_b_fun(I) ->
+  #b_fun{'fun'=Fun,linkage=Linkage} = I,
+  [{'.reloc', {b_fun,Fun,Linkage}, #comment{term='fun'}},
+   {b, {do_cond('al'),{imm26,0}}, I}].
+
+do_label(I) ->
+  #label{label=Label} = I,
+  [{'.label', Label, I}].
+
+do_load(I) ->
+  #load{ldop=LdOp,dst=Dst,am2=Am2} = I,
+  NewCond = do_cond('al'),
+  NewDst = do_reg(Dst),
+  NewAm2 = do_am2(Am2),
+  [{LdOp, {NewCond,NewDst,NewAm2}, I}].
 
 do_pseudo_blr(I) ->
   [{'ret', 'none', I}].
+
+do_move(I) ->
+  #move{movop=MovOp,s=S,dst=Dst,am1=Am1} = I,
+  NewCond = do_cond('al'),
+  NewS = do_s(S),
+  NewDst = do_reg(Dst),
+  NewAm1 = do_am1(Am1),
+  [{MovOp, {NewCond,NewS,NewDst,NewAm1}, I}].
 
 do_pseudo_li(I, MFA, ConstMap, Address, PrevImms, PendImms) ->
   #pseudo_li{dst=Dst,imm=Imm,label=Label0} = I,
@@ -268,19 +302,35 @@ do_pseudo_li(I, MFA, ConstMap, Address, PrevImms, PendImms) ->
   NewDst = do_reg(Dst),
   {[{'.pseudo_li', {NewDst,do_label_ref(Label1)}, I}], PendImms1}.
 
+do_store(I) ->
+  #store{stop=StOp,src=Src,am2=Am2} = I,
+  NewCond = do_cond('al'),
+  NewSrc = do_reg(Src),
+  NewAm2 = do_am2(Am2),
+  [{StOp, {NewCond,NewSrc,NewAm2}, I}].
+
 do_reg(#aarch64_temp{reg=Reg,type=Type})
-  when is_integer(Reg), 0 =< Reg, Reg < 16, Type =/= 'double' ->
+  when is_integer(Reg), 0 =< Reg, Reg < 32, Type =/= 'double' ->
   {r,Reg}.
 
 do_cond(Cond) -> {'cond',Cond}.
 
+do_s(S) -> {'s', case S of false -> 0; true -> 1 end}.
+
 do_label_ref(Label) when is_integer(Label) ->
   {label,Label}.	% symbolic, since offset is not yet computable
 
-%do_am1(Am1) ->
-%  case Am1 of
-%    {Imm16,Imm2} -> {{imm16,Imm16},{imm2,Imm2}}
-%  end.
+do_am1(Am1) ->
+  case Am1 of
+    {Imm16,Imm2} -> {{imm16,Imm16},{imm2,Imm2}}
+  end.
+
+do_am2(#am2{src=Src,offset=Offset}) ->
+  NewSrc = do_reg(Src),
+  case Offset of
+    #aarch64_temp{} -> {'register_offset',NewSrc,do_reg(Offset)};
+    Imm12 -> {'immediate_offset',NewSrc,{imm12,Imm12}}
+  end.
 
 %%%
 %%% Assembly Pass 3.

@@ -203,7 +203,7 @@ pseudo_tailcall_linkage(#pseudo_tailcall{linkage=Linkage}) -> Linkage.
 
 mk_pseudo_tailcall_prepare() -> #pseudo_tailcall_prepare{}.
 
-% Stores in aarch64 will accept a 12-bit scaled
+% Register-relative stores in aarch64 will accept a 12-bit scaled
 % unsigned immediate offset, meaning a range of 0 - 32760.
 % For greater range or negative offsets, we use register offset
 % via a scratch register.
