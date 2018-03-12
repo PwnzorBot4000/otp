@@ -88,7 +88,7 @@
 -record(bl, {'fun', sdesc, linkage}).	% known recursive call; cond not included
 %-record(blx, {src, sdesc}).		% computed recursive call; cond not included
 -record(cmp, {cmpop, src, am1}).	% cond not included
-%-record(comment, {term}).
+-record(comment, {term}).
 -record(label, {label}).
 -record(load, {ldop, dst, am2}).	% cond not included; ldrh/ldrsh not included
 %-record(ldrsb, {dst, am3}).		% cond not included

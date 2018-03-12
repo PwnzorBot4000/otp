@@ -46,6 +46,7 @@ RELSYSDIR = $(RELEASE_PATH)/lib/hipe-$(VSN)
 # ----------------------------------------------------
 # Please keep this list sorted.
 MODULES=hipe_aarch64 \
+	hipe_aarch64_assemble \
 	hipe_aarch64_cfg \
 	hipe_aarch64_defuse \
 	hipe_aarch64_finalise \
@@ -109,6 +110,7 @@ release_spec: opt
 release_docs_spec:
 
 # Please keep this list sorted.
+$(EBIN)/hipe_aarch64_assemble.beam: ../main/hipe.hrl ../../kernel/src/hipe_ext_format.hrl ../rtl/hipe_literals.hrl
 $(EBIN)/hipe_aarch64_cfg.beam: ../flow/cfg.hrl ../flow/cfg.inc
 $(EBIN)/hipe_aarch64_frame.beam: ../rtl/hipe_literals.hrl
 $(EBIN)/hipe_aarch64_liveness_gpr.beam: ../flow/liveness.inc

@@ -122,7 +122,7 @@ mk_label(Label) -> #label{label=Label}.
 is_label(I) -> case I of #label{} -> true; _ -> false end.
 label_label(#label{label=Label}) -> Label.
 
-% Loads in aarch64 will accept a 12-bit scaled
+% Register - relative loads in aarch64 will accept a 12-bit scaled
 % unsigned immediate offset, meaning a range of 0 - 32760.
 % For greater range or negative offsets, we use register offset
 % via a scratch register.
@@ -260,12 +260,12 @@ mk_addi(Dst, Src, Value, Rest) ->
 
 try_aluop_imm(AluOp, Imm) -> % -> {NewAluOp,Am1} or []
   case imm_to_am1(Imm) of
-    (Am1={_Imm8,_Imm4}) -> {AluOp, Am1};
+    (Am1={_Imm16,_Imm2}) -> {AluOp, Am1};
     [] ->
       case invert_aluop_imm(AluOp, Imm) of
 	{NewAluOp,NewImm} ->
 	  case imm_to_am1(NewImm) of
-	    (Am1={_Imm8,_Imm4}) -> {NewAluOp, Am1};
+	    (Am1={_Imm16,_Imm2}) -> {NewAluOp, Am1};
 	    [] -> []
 	  end;
 	[] -> []

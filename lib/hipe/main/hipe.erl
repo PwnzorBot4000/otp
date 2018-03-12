@@ -934,6 +934,8 @@ assemble(CompiledCode, Closures, Exports, Options) ->
           hipe_ppc_assemble:assemble(CompiledCode, Closures, Exports, Options);
         arm ->
           hipe_arm_assemble:assemble(CompiledCode, Closures, Exports, Options);
+        aarch64 ->
+          hipe_aarch64_assemble:assemble(CompiledCode, Closures, Exports, Options);
         x86 ->
           hipe_x86_assemble:assemble(CompiledCode, Closures, Exports, Options);
         amd64 ->
