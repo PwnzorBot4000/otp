@@ -92,7 +92,7 @@ ra_funv(FunV, Map) ->
 
 ra_am1(Am1, _) ->
   case Am1 of
-    {_,_} ->
+    {_Size,_Imm,_Shift} ->
       Am1
   end.
 

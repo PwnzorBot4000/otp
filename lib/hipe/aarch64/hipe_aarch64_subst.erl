@@ -19,8 +19,10 @@
 %% These should be moved to hipe_aarch64 and exported
 -type temp()    :: #aarch64_temp{}.
 -type imm2()    :: 0..3.
+-type imm12()   :: 0..4095.
 -type imm16()   :: 0..65535.
--type am1()     :: {imm16(),imm2()}.
+-type am1()     :: {imm12,imm12(),imm2()}
+        | {imm16,imm16(),imm2()}.
 -type arg()     :: temp() | integer().
 -type funv()    :: #aarch64_mfa{} | temp().
 -type insn()    :: tuple(). % for now
@@ -43,7 +45,7 @@ insn_temps(T, I) ->
   end.
 
 -spec am1_temps(subst_fun(), am1()) -> am1().
-am1_temps(_SubstTemp, T={C,R}) when is_integer(C), is_integer(R) -> T.
+am1_temps(_SubstTemp, T={_S,C,R}) when is_integer(C), is_integer(R) -> T.
 
 -spec funv_temps(subst_fun(), funv()) -> funv().
 funv_temps(_SubstTemp, M=#aarch64_mfa{}) -> M;

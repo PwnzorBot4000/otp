@@ -322,7 +322,8 @@ do_label_ref(Label) when is_integer(Label) ->
 
 do_am1(Am1) ->
   case Am1 of
-    {Imm16,Imm2} -> {{imm16,Imm16},{imm2,Imm2}}
+    {imm12,Imm12,Imm2} -> {'immediate', {{imm12,Imm12},{imm2,Imm2}}};
+    {imm16,Imm16,Imm2} -> {'immediate', {{imm16,Imm16},{imm2,Imm2}}}
   end.
 
 do_am2(#am2{src=Src,offset=Offset}) ->

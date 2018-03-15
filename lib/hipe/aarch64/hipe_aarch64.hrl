@@ -52,11 +52,8 @@
 %%%
 %%% Note: am1 represents all 11 variants of "Adressing Mode 1".
 %%%
-%%% am1		::= {imm16,imm2}	imm16 rotated left 16*imm2 bits
-%%%		  | src
-%%%		  | {src,rrx}
-%%%		  | {src,shiftop,imm5}
-%%%		  | {src,shiftop,src}
+%%% am1		::= {imm12,Imm12,Imm2}	imm12 shifted left 12*Imm2 bits [limitation: Imm2 =< 1]
+%%%         |   {imm16,Imm16,Imm2}	Imm16 shifted left 16*Imm2 bits
 %%% shiftop	::= lsl | lsr | asr | ror
 %%%
 %%% Note: am2 can represent the first 3 variants of "Addressing Mode 2",

@@ -258,14 +258,21 @@ mk_addi(Dst, Src, Value, Rest) ->
       [mk_pseudo_li(Tmp, Value), mk_alu('add', Dst, Src, Tmp) | Rest]
   end.
 
+%%% Arithmetic operations (add, cmp) accept a 12-bit immediate.
+%%% Move operations accept a 16-bit immediate.
+
 try_aluop_imm(AluOp, Imm) -> % -> {NewAluOp,Am1} or []
-  case imm_to_am1(Imm) of
-    (Am1={_Imm16,_Imm2}) -> {AluOp, Am1};
+  ImmSize = case AluOp of
+    'mov' -> imm16;
+    _     -> imm12
+  end,
+  case imm_to_am1(Imm, ImmSize) of
+    (Am1={_Size,_Imm,_Imm2}) -> {AluOp, Am1};
     [] ->
       case invert_aluop_imm(AluOp, Imm) of
 	{NewAluOp,NewImm} ->
-	  case imm_to_am1(NewImm) of
-	    (Am1={_Imm16,_Imm2}) -> {NewAluOp, Am1};
+	  case imm_to_am1(NewImm, ImmSize) of
+	    (Am1={_Size,_Imm,_Imm2}) -> {NewAluOp, Am1};
 	    [] -> []
 	  end;
 	[] -> []
@@ -279,21 +286,38 @@ invert_aluop_imm(AluOp, Imm) ->
   end.
 
 %%% Create a 'shifter operand'.
-%%% Immediates have to be 16 bits long, however
+%%% Immediates on moves have to be 16 bits long, however
 %%% immediate - accepting operations can be accompanied by this
 %%% value of 2 bits in size, which denotes the number of positions
 %%% the immediate will be shifted left, which can be 0, 16, 32 or 48.
+%%% Immediates on alu's are 12 bits long, and can be shifted
+%%% by 0 or 12 bits to the left.
 %%% Here we are converting a 64-bit value into a
-%%% 16-bit immediate and a 2-bit shifter operand.
+%%% 12/16-bit immediate and a 2-bit shifter operand.
 
-imm_to_am1(Imm) -> imm_to_am1(Imm band 16#FFFFFFFFFFFFFFFF, 0).
-imm_to_am1(Imm, RotCnt) ->
-  if Imm >= 0, Imm =< 65535 -> {Imm, RotCnt band 3};
+imm_to_am1(Imm, Size) ->
+  Imm64 = Imm band 16#FFFFFFFFFFFFFFFF,
+  SplitImm = case Size of
+    imm12 ->
+      if (Imm64 =< 16#FFFFFF) ->
+        imm_to_am1(Imm64, 12, 16#FFF, 0);
+      true ->
+        [] % Alu's can't shift more than 12 bits.
+      end;
+    imm16 ->
+      imm_to_am1(Imm64, 16, 16#FFFF, 0)
+  end,
+  case SplitImm of
+    [] -> [];
+    {ShiftedImm, Shifts} -> {Size, ShiftedImm, Shifts}
+  end.
+imm_to_am1(Imm, Size, MaxImm, RotCnt) ->
+  if Imm >= 0, Imm =< MaxImm -> {Imm, RotCnt band 3};
      true ->
-      if (Imm band 16#FFFF) =/= 0 -> []; % Imm can't fit in single op
+      if (Imm band MaxImm) =/= 0 -> []; % Imm can't fit in single op
      true ->
       NewRotCnt = RotCnt + 1,
-	  NewImm = Imm bsr 16,
+	  NewImm = Imm bsr Size,
 	  imm_to_am1(NewImm, NewRotCnt)
       end
   end.     

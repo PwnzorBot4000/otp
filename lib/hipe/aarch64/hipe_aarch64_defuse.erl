@@ -90,7 +90,7 @@ funv_use(FunV, Set) ->
 
 am1_use(Am1, Set) ->
   case Am1 of
-    {_,_} -> Set
+    {_Size,_Imm,_Shift} -> Set
   end.
 
 %%%

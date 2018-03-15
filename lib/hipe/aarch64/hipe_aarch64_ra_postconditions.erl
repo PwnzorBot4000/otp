@@ -84,7 +84,7 @@ fix_funv(FunV, TempMap, Strategy) ->
 
 fix_am1(Am1, _, _) ->
   case Am1 of
-    {_, _} -> {[], Am1, false}
+    {_Size,_Imm,_Shift} -> {[], Am1, false}
   end.
 
 temp1('new') -> [];
