@@ -65,12 +65,22 @@ data_addsub_form(Op, {{'cond',_Cond},{s,S},{r,Rd},{r,Rn},Opnd}) ->
 
 sub(Opnds) -> data_addsub_form(2#1, Opnds).
 
+ldstr_imm_form(Size, V, Opc, Imm12, Rn, Rt) ->
+  ?BF(31,30,Size) bor ?BF(29,27,2#111) bor ?BIT(26,V) bor ?BF(25,24,2#01) bor ?BF(23,22,Opc) bor ?BF(21,10,Imm12) bor ?BF(9,5,Rn) bor ?BF(4,0,Rt).
+
+str({_Cond, {r, Src}, Dst}) ->
+  case Dst of
+    {'immediate_offset', {r, Base}, {imm12, Offset}} ->
+      ldstr_imm_form(2#11, 2#0, 2#00, Offset, Base, Src)
+  end.
+
 %%%
 %%% Main Encode Dispatch
 %%%
 
 insn_encode(Op, Opnds) ->
   case Op of
+    'str' -> str(Opnds);
     'sub' -> sub(Opnds);
     _ -> exit({?MODULE,insn_encode,Op})
   end.
