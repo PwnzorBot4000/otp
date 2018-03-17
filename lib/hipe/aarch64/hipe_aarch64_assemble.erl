@@ -193,7 +193,8 @@ insn_size(I) ->
   case I of
     {'.label',_,_} -> 0;
     {'.reloc',_,_} -> 0;
-    _ -> 8
+    {'.long',_,_} -> 8;
+    _ -> 4
   end.
 
 translate_insn(I, MFA, ConstMap, Address, PrevImms, PendImms) ->
