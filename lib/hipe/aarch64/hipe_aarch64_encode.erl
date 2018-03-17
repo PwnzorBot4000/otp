@@ -54,15 +54,16 @@ bf(LeftBit, RightBit, Value) ->
 %%% AARCH64 Instructions
 %%%
 
-data_imm_addsub_form(Op, S, Imm2, Imm12, Rn, Rd) ->
-  ?BIT(31,1) bor ?BIT(30,Op) bor ?BIT(29,S) bor ?BF(28,24,2#10001) bor ?BF(23,22,Imm2) bor ?BF(21,10,Imm12) bor ?BF(9,5,Rn) bor ?BF(4,0,Rd).
+data_imm_addsub_form(Sf, Op, S, Shift, Imm12, Rn, Rd) ->
+  ?BIT(31,Sf) bor ?BIT(30,Op) bor ?BIT(29,S) bor ?BF(28,24,2#10001) bor ?BF(23,22,Shift) bor ?BF(21,10,Imm12) bor ?BF(9,5,Rn) bor ?BF(4,0,Rd).
 
 data_addsub_form(Op, {{'cond',_Cond},{s,S},{r,Rd},{r,Rn},Opnd}) ->
   case Opnd of
     {'immediate', {{imm12,Imm12},{imm2,Imm2}}} ->
-      data_imm_addsub_form(Op, S, Imm2, Imm12, Rn, Rd)
+      data_imm_addsub_form(2#1, Op, S, Imm2, Imm12, Rn, Rd)
   end.
 
+add(Opnds) -> data_addsub_form(2#0, Opnds).
 sub(Opnds) -> data_addsub_form(2#1, Opnds).
 
 ldstr_imm_form(Size, V, Opc, Imm12, Rn, Rt) ->
@@ -91,6 +92,7 @@ str({_Cond, {r, Src}, Dst}) ->
 
 insn_encode(Op, Opnds) ->
   case Op of
+    'add' -> add(Opnds);
     'ldr' -> ldr(Opnds);
     'str' -> str(Opnds);
     'sub' -> sub(Opnds);
