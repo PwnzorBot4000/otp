@@ -54,6 +54,8 @@ bf(LeftBit, RightBit, Value) ->
 %%% AARCH64 Instructions
 %%%
 
+%%% Data Processing
+
 data_imm_addsub_form(Sf, Op, S, Shift, Imm12, Rn, Rd) ->
   ?BIT(31,Sf) bor ?BIT(30,Op) bor ?BIT(29,S) bor ?BF(28,24,2#10001) bor ?BF(23,22,Shift) bor ?BF(21,10,Imm12) bor ?BF(9,5,Rn) bor ?BF(4,0,Rd).
 
@@ -65,6 +67,8 @@ data_addsub_form(Op, {{'cond',_Cond},{s,S},{r,Rd},{r,Rn},Opnd}) ->
 
 add(Opnds) -> data_addsub_form(2#0, Opnds).
 sub(Opnds) -> data_addsub_form(2#1, Opnds).
+
+%%% Loads / Stores
 
 ldstr_imm_form(Size, V, Opc, Imm12, Rn, Rt) ->
   ?BF(31,30,Size) bor ?BF(29,27,2#111) bor ?BIT(26,V) bor ?BF(25,24,2#01) bor ?BF(23,22,Opc) bor ?BF(21,10,Imm12) bor ?BF(9,5,Rn) bor ?BF(4,0,Rt).
@@ -86,6 +90,14 @@ str({_Cond, {r, Src}, Dst}) ->
       ldstr_imm_form(2#11, 2#0, 2#00, Offset, Base, Src)
   end.
 
+%%% Branches
+
+b_form(Op, Imm26) ->
+  ?BIT(31, Op) bor ?BF(30,26,2#00101) bor ?BF(25,0,Imm26).
+
+b({_Cond, {imm26, Offset}}) ->
+  b_form(2#0, Offset).
+
 %%%
 %%% Main Encode Dispatch
 %%%
@@ -93,6 +105,7 @@ str({_Cond, {r, Src}, Dst}) ->
 insn_encode(Op, Opnds) ->
   case Op of
     'add' -> add(Opnds);
+    'b' -> b(Opnds);
     'ldr' -> ldr(Opnds);
     'str' -> str(Opnds);
     'sub' -> sub(Opnds);
