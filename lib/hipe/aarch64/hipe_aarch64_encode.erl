@@ -101,11 +101,17 @@ str({_Cond, {r, Src}, Dst}) ->
 
 %%% Branches
 
-b_form(Op, Imm26) ->
+b_imm_form(Op, Imm26) ->
   ?BIT(31, Op) bor ?BF(30,26,2#00101) bor ?BF(25,0,Imm26).
 
+b_reg_form(Opc, Op2, Op3, Rn, Op4) ->
+  ?BF(31,25,2#1101011) bor ?BF(24,21,Opc) bor ?BF(20,16,Op2) bor ?BF(15,10,Op3) bor ?BF(9,5,Rn) bor ?BF(4,0,Op4).
+
 b({_Cond, {imm26, Offset}}) ->
-  b_form(2#0, Offset).
+  b_imm_form(2#0, Offset).
+
+ret(_Opnds) ->
+  b_reg_form(2#0010, 2#11111, 2#000000, 2#00000, 2#00000).
 
 %%%
 %%% Main Encode Dispatch
@@ -117,6 +123,7 @@ insn_encode(Op, Opnds) ->
     'b'   -> b(Opnds);
     'ldr' -> ldr(Opnds);
     'mov' -> mov(Opnds);
+    'ret' -> ret(Opnds);
     'str' -> str(Opnds);
     'sub' -> sub(Opnds);
     _ -> exit({?MODULE,insn_encode,Op})
