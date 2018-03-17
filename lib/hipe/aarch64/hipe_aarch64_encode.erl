@@ -61,12 +61,21 @@ data_imm_addsub_form(Sf, Op, S, Shift, Imm12, Rn, Rd) ->
 
 data_addsub_form(Op, {{'cond',_Cond},{s,S},{r,Rd},{r,Rn},Opnd}) ->
   case Opnd of
-    {'immediate', {{imm12,Imm12},{imm2,Imm2}}} ->
+    {'immediate', {imm12, Imm12}, {imm2, Imm2}} ->
       data_imm_addsub_form(2#1, Op, S, Imm2, Imm12, Rn, Rd)
   end.
 
 add(Opnds) -> data_addsub_form(2#0, Opnds).
 sub(Opnds) -> data_addsub_form(2#1, Opnds).
+
+data_mov_form(Sf, Opc, Hw, Imm16, Rd) ->
+  ?BIT(31,Sf) bor ?BF(30,29,Opc) bor ?BF(28,23,2#100101) bor ?BF(22,21,Hw) bor ?BF(20,5,Imm16) bor ?BF(4,0,Rd).
+
+mov({_Cond, _S, {r, Dst}, Src}) ->
+  case Src of
+    {'immediate', {imm16, Imm16}, {imm2, Imm2}} ->
+      data_mov_form(2#1, 2#00, Imm2, Imm16, Dst)
+  end.
 
 %%% Loads / Stores
 
@@ -105,8 +114,9 @@ b({_Cond, {imm26, Offset}}) ->
 insn_encode(Op, Opnds) ->
   case Op of
     'add' -> add(Opnds);
-    'b' -> b(Opnds);
+    'b'   -> b(Opnds);
     'ldr' -> ldr(Opnds);
+    'mov' -> mov(Opnds);
     'str' -> str(Opnds);
     'sub' -> sub(Opnds);
     _ -> exit({?MODULE,insn_encode,Op})
