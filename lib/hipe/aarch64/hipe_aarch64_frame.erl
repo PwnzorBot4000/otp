@@ -59,10 +59,12 @@ do_block([], _, Context, FPoff, RevCode) ->
   FPoff0 = FPoff,
   lists:reverse(RevCode, []).
 
-do_insn(I, _, Context, FPoff) ->
+do_insn(I, LiveOut, Context, FPoff) ->
   case I of
     #pseudo_blr{} ->
       {do_pseudo_blr(I, Context, FPoff), context_framesize(Context)};
+    #pseudo_call{} ->
+      do_pseudo_call(I, LiveOut, Context, FPoff);
     #pseudo_tailcall{} ->
       {do_pseudo_tailcall(I, Context), context_framesize(Context)};
     #move{} ->
@@ -104,6 +106,22 @@ adjust_sp(N, Rest) ->
       SP = mk_sp(),
       hipe_aarch64:mk_addi(SP, SP, N, Rest)
   end.
+%%%
+%%% Recursive calls.
+%%%
+
+do_pseudo_call(I, LiveOut, Context, FPoff0) ->
+  #aarch64_sdesc{exnlab=ExnLab,arity=OrigArity} = hipe_aarch64:pseudo_call_sdesc(I),
+  FunV = hipe_aarch64:pseudo_call_funv(I),
+  LiveTemps = [Temp || Temp <- LiveOut, temp_is_pseudo(Temp)],
+  SDesc = mk_sdesc(ExnLab, Context, LiveTemps),
+  ContLab = hipe_aarch64:pseudo_call_contlab(I),
+  Linkage = hipe_aarch64:pseudo_call_linkage(I),
+  CallCode = [hipe_aarch64:mk_pseudo_call(FunV, SDesc, ContLab, Linkage)],
+  StkArity = erlang:max(0, OrigArity - hipe_aarch64_registers:nr_args()),
+  context_need_stack(Context, stack_need(FPoff0, StkArity, FunV)),
+  ArgsBytes = word_size() * StkArity,
+  {CallCode, FPoff0 - ArgsBytes}.
 
 stack_need(FPoff, StkArity, FunV) ->
   case FunV of
@@ -122,6 +140,24 @@ stack_need_general(FPoff, StkArity) ->
 %%%
 %%% Create stack descriptors for call sites.
 %%%
+
+mk_sdesc(ExnLab, Context, Temps) ->	% for normal calls
+  Temps0 = only_tagged(Temps),
+  Live = mk_live(Context, Temps0),
+  Arity = context_arity(Context),
+  FSize = context_framesize(Context),
+  hipe_aarch64:mk_sdesc(ExnLab, (FSize div word_size())-1, Arity,
+                    list_to_tuple(Live)).
+
+only_tagged(Temps)->
+  [X || X <- Temps, hipe_aarch64:temp_type(X) =:= 'tagged'].
+
+mk_live(Context, Temps) ->
+  lists:sort([temp_to_slot(Context, Temp) || Temp <- Temps]).
+
+temp_to_slot(Context, Temp) ->
+  (context_framesize(Context) + context_offset(Context, Temp))
+    div word_size().
 
 mk_minimal_sdesc(Context) ->		% for inc_stack_0 calls
   hipe_aarch64:mk_sdesc([], 0, context_arity(Context), {}).
@@ -189,6 +225,9 @@ context_framesize(#context{framesize=FrameSize}) ->
 context_liveness(#context{liveness=Liveness}) ->
   Liveness.
 
+context_offset(#context{map=Map}, Temp) ->
+  tmap_lookup(Map, Temp).
+
 context_clobbers_lr(#context{clobbers_lr=ClobbersLR}) -> ClobbersLR.
 
 mk_temp_map(Formals, ClobbersLR, Temps) ->
@@ -219,6 +258,9 @@ tmap_empty() ->
 
 tmap_bind(Map, Key, Val) ->
   gb_trees:insert(Key, Val, Map).
+
+tmap_lookup(Map, Key) ->
+  gb_trees:get(Key, Map).
 
 %%%
 %%% do_prologue: prepend stack frame allocation code.

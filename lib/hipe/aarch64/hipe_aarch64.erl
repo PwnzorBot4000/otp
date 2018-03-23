@@ -47,6 +47,10 @@
 	 mk_load/6,
 
 	 mk_pseudo_call/4,
+	 pseudo_call_contlab/1,
+	 pseudo_call_funv/1,
+	 pseudo_call_sdesc/1,
+	 pseudo_call_linkage/1,
 
 	 mk_pseudo_bc/4,
 
@@ -195,6 +199,10 @@ negate_cond(Cond) ->
 
 mk_pseudo_call(FunV, SDesc, ContLab, Linkage) ->
   #pseudo_call{funv=FunV, sdesc=SDesc, contlab=ContLab, linkage=Linkage}.
+pseudo_call_funv(#pseudo_call{funv=FunV}) -> FunV.
+pseudo_call_sdesc(#pseudo_call{sdesc=SDesc}) -> SDesc.
+pseudo_call_contlab(#pseudo_call{contlab=ContLab}) -> ContLab.
+pseudo_call_linkage(#pseudo_call{linkage=Linkage}) -> Linkage.
 
 mk_pseudo_li(Dst, Imm) ->
   #pseudo_li{dst=Dst, imm=Imm, label=hipe_gensym:get_next_label(aarch64)}.
