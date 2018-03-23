@@ -22,6 +22,7 @@
 -export([postorder/1]).
 -export([linearise/1]).
 -export([params/1, reverse_postorder/1]).
+-export([branch_preds/1]).
 
 %%% these tell cfg.inc what to define (ugly as hell)
 -define(BREADTH_ORDER,true).  % for linear scan
@@ -72,6 +73,13 @@ branch_successors(Branch) ->
 	_ -> [ContLab,ExnLab]
       end;
     #pseudo_tailcall{} -> []
+  end.
+
+branch_preds(Branch) ->
+  case Branch of
+    #pseudo_call{contlab=ContLab, sdesc=#aarch64_sdesc{exnlab=[]}} ->
+      %% A function can still cause an exception, even if we won't catch it
+      [{ContLab, 1.0-hipe_bb_weights:call_exn_pred()}]
   end.
 
 mk_goto(_) ->

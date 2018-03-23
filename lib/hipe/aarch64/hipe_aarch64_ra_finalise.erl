@@ -38,6 +38,7 @@ ra_insn(I, Map, Accum) ->
 ra_insn_1(I, Map) ->
   case I of
     #move{} -> ra_move(I, Map);
+    #pseudo_call{} -> ra_pseudo_call(I, Map);
     #pseudo_li{} -> ra_pseudo_li(I, Map);
     #pseudo_tailcall{} -> ra_pseudo_tailcall(I, Map);
     #pseudo_blr{} -> I;
@@ -49,6 +50,10 @@ ra_move(I=#move{dst=Dst,am1=Am1}, Map) ->
   NewDst = ra_temp(Dst, Map),
   NewAm1 = ra_am1(Am1, Map),
   I#move{dst=NewDst,am1=NewAm1}.
+
+ra_pseudo_call(I=#pseudo_call{funv=FunV}, Map) ->
+  NewFunV = ra_funv(FunV, Map),
+  I#pseudo_call{funv=NewFunV}.
 
 ra_pseudo_li(I=#pseudo_li{dst=Dst}, Map) ->
   NewDst = ra_temp(Dst, Map),

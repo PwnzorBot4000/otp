@@ -36,6 +36,7 @@ insn_temps(T, I) ->
   Arg = fun(O) -> arg_temps(T, O) end,
   case I of
       #move       {dst=D,am1=S} -> I#move        {dst=T(D),am1=AM1(S)};
+      #pseudo_move{dst=D,src=S} -> I#pseudo_move {dst=T(D),src=T(S)};
       #label{} -> I;
       #pseudo_blr{} -> I;
       #pseudo_li{dst=D} -> I#pseudo_li{dst=T(D)};

@@ -49,7 +49,9 @@ do_insns([], _TempMap, _Strategy, Accum, DidSpill) ->
 do_insn(I, TempMap, Strategy) ->
   case I of
     #move{} -> do_move(I, TempMap, Strategy);
+    #pseudo_call{} -> do_pseudo_call(I, TempMap, Strategy);
     #pseudo_li{} -> do_pseudo_li(I, TempMap, Strategy);
+    #pseudo_move{} -> do_pseudo_move(I, TempMap, Strategy);
     #pseudo_tailcall{} -> do_pseudo_tailcall(I, TempMap, Strategy);
     #pseudo_blr{} -> {[I], false};
     #pseudo_tailcall_prepare{} -> {[I], false}
@@ -64,10 +66,31 @@ do_move(I=#move{dst=Dst,am1=Am1}, TempMap, Strategy) ->
   NewI = I#move{dst=NewDst,am1=NewAm1},
   {FixAm1 ++ [NewI | FixDst], DidSpill1 or DidSpill2}.
 
+do_pseudo_call(I=#pseudo_call{funv=FunV}, TempMap, Strategy) ->
+  {FixFunV,NewFunV,DidSpill} = fix_funv(FunV, TempMap, Strategy),
+  NewI = I#pseudo_call{funv=NewFunV},
+  {FixFunV ++ [NewI], DidSpill}.
+
 do_pseudo_li(I=#pseudo_li{dst=Dst}, TempMap, Strategy) ->
   {FixDst,NewDst,DidSpill} = fix_dst(Dst, TempMap, Strategy),
   NewI = I#pseudo_li{dst=NewDst},
   {[NewI | FixDst], DidSpill}.
+
+do_pseudo_move(I=#pseudo_move{dst=Dst,src=Src}, TempMap, Strategy) ->
+  %% Either Dst or Src (but not both) may be a pseudo temp.
+  %% pseudo_move, pseudo_spill_move, and pseudo_tailcall
+  %% are special cases: in all other instructions, all
+  %% temps must be non-pseudos after register allocation.
+  case temp_is_spilled(Dst, TempMap)
+    andalso temp_is_spilled(Dst, TempMap)
+  of
+    true -> % Turn into pseudo_spill_move
+      Temp = clone(Src, temp1(Strategy)),
+      NewI = #pseudo_spill_move{dst=Dst, temp=Temp, src=Src},
+      {[NewI], true};
+    _ ->
+      {[I], false}
+  end.
 
 do_pseudo_tailcall(I=#pseudo_tailcall{funv=FunV}, TempMap, Strategy) ->
   {FixFunV,NewFunV,DidSpill} = fix_funv(FunV, TempMap, Strategy),

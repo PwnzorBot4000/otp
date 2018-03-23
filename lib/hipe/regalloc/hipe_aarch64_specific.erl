@@ -23,6 +23,7 @@
     number_of_temporaries/2,
     check_and_rewrite/3,
     reverse_postorder/2,
+    livein/3,
     non_alloc/2,
     bb/3,
     def_use/2,
@@ -38,6 +39,9 @@
 -export([update_bb/4,
     subst_temps/3
     ]).
+
+%% callbacks for hipe_bb_weights, hipe_range_split
+-export([branch_preds/2]).
 
 check_and_rewrite(CFG, Coloring, no_context) ->
   hipe_aarch64_ra_postconditions:check_and_rewrite(CFG, Coloring, 'normal').
@@ -57,6 +61,10 @@ non_alloc_1(_, []) -> [].
 
 analyze(CFG, _) ->
   hipe_aarch64_liveness_gpr:analyse(CFG).
+
+livein(Liveness,L,_) ->
+  [X || X <- hipe_aarch64_liveness_gpr:livein(Liveness,L),
+	hipe_aarch64:temp_is_allocatable(X)].
 
 liveout(BB_in_out_liveness,Label,_) ->
   [X || X <- hipe_aarch64_liveness_gpr:liveout(BB_in_out_liveness,Label),
@@ -88,6 +96,9 @@ bb(CFG,L,_) ->
 
 update_bb(CFG,L,BB,_) ->
   hipe_aarch64_cfg:bb_add(CFG,L,BB).
+
+branch_preds(Branch,_) ->
+  hipe_aarch64_cfg:branch_preds(Branch).
 
 %% AARCH64 stuff
 
