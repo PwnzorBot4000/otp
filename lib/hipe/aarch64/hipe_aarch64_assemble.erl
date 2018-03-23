@@ -209,7 +209,7 @@ translate_insn(I) ->	% -> [{Op,Opnd,OrigI}]
     #alu{} -> do_alu(I);
     #b_fun{} -> do_b_fun(I);
     %#b_label{} -> do_b_label(I);
-    %#bl{} -> do_bl(I);
+    #bl{} -> do_bl(I);
     %#blx{} -> do_blx(I);
     %#cmp{} -> do_cmp(I);
     %#comment{} -> [];
@@ -244,6 +244,12 @@ do_b_fun(I) ->
   #b_fun{'fun'=Fun,linkage=Linkage} = I,
   [{'.reloc', {b_fun,Fun,Linkage}, #comment{term='fun'}},
    {b, {do_cond('al'),{imm26,0}}, I}].
+
+do_bl(I) ->
+  #bl{'fun'=Fun,sdesc=SDesc,linkage=Linkage} = I,
+  [{'.reloc', {b_fun,Fun,Linkage}, #comment{term='fun'}},
+   {bl, {do_cond('al'),{imm26,0}}, I},
+   {'.reloc', {sdesc,SDesc}, #comment{term=sdesc}}].
 
 do_label(I) ->
   #label{label=Label} = I,
