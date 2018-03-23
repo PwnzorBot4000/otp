@@ -27,6 +27,7 @@
 	 lr/0,
      allocatable_gpr/0,
 	 nr_args/0,
+	 arg/1,
 	 args/1,
      tailcall_clobbered/0,
 	 live_at_return/0

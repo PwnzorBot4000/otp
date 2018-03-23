@@ -111,7 +111,7 @@ b({_Cond, {imm26, Offset}}) ->
   b_imm_form(2#0, Offset).
 
 ret(_Opnds) ->
-  b_reg_form(2#0010, 2#11111, 2#000000, 2#00000, 2#00000).
+  b_reg_form(2#0010, 2#11111, 2#000000, 30, 2#00000).
 
 %%%
 %%% Main Encode Dispatch

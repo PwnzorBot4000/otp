@@ -88,7 +88,7 @@ translate_insns([I|Is] = Insns, MFA, ConstMap, LabelMap, Address, NewInsns, Prev
 	%% in the assembler, we emit a forward branch with an offset computed
 	%% from the size of the pending literals.
 	N = pending_size(PendImms),	% N >= 1 since MustFlushPending is true
-	BranchOffset = N - 1,		% in units of 64-bit words!
+	BranchOffset = 2 * N + 1,		% in units of 32-bit words!
 	NewIs0 = [{b, {do_cond('al'),{imm26,BranchOffset}}, #comment{term='skip'}}],
 	%% io:format("~w: forced flush of pending literals in ~w at ~w\n", [?MODULE,MFA,Address]),
 	{NewIs0,Insns,PendImms,true};

@@ -25,6 +25,8 @@
 	 mk_mfa/3,
 
      mk_prim/1,
+	 is_prim/1,
+     prim_prim/1,
 
      mk_b_fun/2,
 
@@ -44,10 +46,13 @@
 	 mk_load/3,
 	 mk_load/6,
 
+	 mk_pseudo_call/4,
+
 	 mk_pseudo_bc/4,
 
 	 mk_pseudo_li/2,
 
+	 mk_pseudo_move/2,
 	 is_pseudo_move/1,
 	 pseudo_move_dst/1,
 	 pseudo_move_src/1,
@@ -101,6 +106,8 @@ temp_is_precoloured(#aarch64_temp{reg=Reg}) ->
 mk_mfa(M, F, A) -> #aarch64_mfa{m=M, f=F, a=A}.
 
 mk_prim(Prim) -> #aarch64_prim{prim=Prim}.
+is_prim(X) -> case X of #aarch64_prim{} -> true; _ -> false end.
+prim_prim(#aarch64_prim{prim=Prim}) -> Prim.
 
 mk_alu(AluOp, S, Dst, Src, Am1) ->
   #alu{aluop=AluOp, s=S, dst=Dst, src=Src, am1=Am1}.
@@ -186,9 +193,13 @@ negate_cond(Cond) ->
     'vc' -> 'vs'	% not_overflow, overflow
   end.
 
+mk_pseudo_call(FunV, SDesc, ContLab, Linkage) ->
+  #pseudo_call{funv=FunV, sdesc=SDesc, contlab=ContLab, linkage=Linkage}.
+
 mk_pseudo_li(Dst, Imm) ->
   #pseudo_li{dst=Dst, imm=Imm, label=hipe_gensym:get_next_label(aarch64)}.
 
+mk_pseudo_move(Dst, Src) -> #pseudo_move{dst=Dst, src=Src}.
 is_pseudo_move(I) -> case I of #pseudo_move{} -> true; _ -> false end.
 pseudo_move_dst(#pseudo_move{dst=Dst}) -> Dst.
 pseudo_move_src(#pseudo_move{src=Src}) -> Src.
