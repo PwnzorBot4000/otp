@@ -49,12 +49,14 @@ is_branch(I) ->
     #b_fun{} -> true;
     #b_label{'cond'='al'} -> true;
     #pseudo_blr{} -> true;
+    #pseudo_call{} -> true;
     #pseudo_tailcall{} -> true;
     #pseudo_tailcall_prepare{} -> false;
     #load{} -> false;
     #store{} -> false;
     #alu{} -> false;
     #move{} -> false;
+    #pseudo_move{} -> false;
     #pseudo_li{} -> false % to be removed: temporarily handling all false cases here 
     %_ -> false           % to prevent unhandled cases return false without warning.
   end.
@@ -64,6 +66,11 @@ branch_successors(Branch) ->
     #b_fun{} -> [];
     #b_label{'cond'='al',label=Label} -> [Label];
     #pseudo_blr{} -> [];
+    #pseudo_call{contlab=ContLab, sdesc=#aarch64_sdesc{exnlab=ExnLab}} ->
+      case ExnLab of
+	[] -> [ContLab];
+	_ -> [ContLab,ExnLab]
+      end;
     #pseudo_tailcall{} -> []
   end.
 

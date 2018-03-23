@@ -29,6 +29,7 @@
 	 nr_args/0,
 	 arg/1,
 	 args/1,
+     call_clobbered/0,
      tailcall_clobbered/0,
 	 live_at_return/0
 	 ]).
@@ -152,6 +153,43 @@ arg(N) ->
      true ->
       exit({?MODULE, arg, N})
   end.
+
+%% Note: the fact that allocatable_gpr() is a subset of call_clobbered() is
+%% hard-coded in hipe_arm_defuse:insn_defs_all_gpr/1
+call_clobbered() ->		% does the RA strip the type or not?
+  [{?X0,tagged},{?X0,untagged},
+   {?X1,tagged},{?X1,untagged},
+   {?X2,tagged},{?X2,untagged},
+   {?X3,tagged},{?X3,untagged},
+   {?X4,tagged},{?X4,untagged},
+   {?X5,tagged},{?X5,untagged},
+   {?X6,tagged},{?X6,untagged},
+   {?X7,tagged},{?X7,untagged},
+   {?X8,tagged},{?X8,untagged},
+   {?X9,tagged},{?X9,untagged},
+   {?X10,tagged},{?X10,untagged},
+   {?X11,tagged},{?X11,untagged},
+   {?X12,tagged},{?X12,untagged},
+   {?X13,tagged},{?X13,untagged},
+   {?X14,tagged},{?X14,untagged},
+   {?X15,tagged},{?X15,untagged},
+   {?X16,tagged},{?X16,untagged},
+   {?X17,tagged},{?X17,untagged},
+   {?X18,tagged},{?X18,untagged},
+   {?X19,tagged},{?X19,untagged},
+   {?X20,tagged},{?X20,untagged},
+   {?X21,tagged},{?X21,untagged},
+   {?X22,tagged},{?X22,untagged},
+   {?X23,tagged},{?X23,untagged},
+   {?X24,tagged},{?X24,untagged},
+   {?X25,tagged},{?X25,untagged},
+   % X26 is restricted (HP)
+   % X27 is restricted (NSP)
+   % X28 is restricted (P)
+   {?X29,tagged},{?X29,untagged},
+   {?X30,tagged},{?X30,untagged}
+   % SP is restricted
+  ].
 
 tailcall_clobbered() ->		% tailcall crapola needs one temp
   [{?TEMP1,tagged},{?TEMP1,untagged}

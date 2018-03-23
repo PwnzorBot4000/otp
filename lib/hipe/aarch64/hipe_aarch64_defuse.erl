@@ -34,7 +34,9 @@ insn_use_all(I) ->
 insn_def_gpr(I) ->
   case I of
     #move{dst=Dst} -> [Dst];
+    #pseudo_call{} -> call_clobbered_gpr();
     #pseudo_li{dst=Dst} -> [Dst];
+    #pseudo_move{dst=Dst} -> [Dst];
     #pseudo_tailcall{} -> [];
     #pseudo_tailcall_prepare{} -> tailcall_clobbered_gpr();
     #pseudo_blr{} -> []
@@ -51,6 +53,10 @@ tailcall_clobbered_gpr() ->
   [hipe_aarch64:mk_temp(R, T)
    || {R,T} <- hipe_aarch64_registers:tailcall_clobbered() ++ all_fp_pseudos()].
 
+call_clobbered_gpr() ->
+  [hipe_aarch64:mk_temp(R, T)
+   || {R,T} <- hipe_aarch64_registers:call_clobbered() ++ all_fp_pseudos()].
+
 all_fp_pseudos() -> [].	% XXX: for now
 
 insn_use_gpr(I) ->
@@ -60,6 +66,9 @@ insn_use_gpr(I) ->
       LR = hipe_aarch64:mk_temp(hipe_aarch64_registers:lr(), 'untagged'),
       RV = hipe_aarch64:mk_temp(hipe_aarch64_registers:return_value(), 'tagged'),
       [RV, LR];
+    #pseudo_call{funv=FunV,sdesc=#aarch64_sdesc{arity=Arity}} ->
+      funv_use(FunV, arity_use_gpr(Arity));
+    #pseudo_move{src=Src} -> [Src];
     #pseudo_tailcall{funv=FunV,arity=Arity,stkargs=StkArgs} ->
       addargs(StkArgs, addtemps(tailcall_clobbered_gpr(), funv_use(FunV, arity_use_gpr(Arity))));
     #pseudo_li{} -> [];
