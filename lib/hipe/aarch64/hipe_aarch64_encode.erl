@@ -110,6 +110,9 @@ b_reg_form(Opc, Op2, Op3, Rn, Op4) ->
 b({_Cond, {imm26, Offset}}) ->
   b_imm_form(2#0, Offset).
 
+bl({_Cond, {imm26, Offset}}) ->
+  b_imm_form(2#1, Offset).
+
 ret(_Opnds) ->
   b_reg_form(2#0010, 2#11111, 2#000000, 30, 2#00000).
 
@@ -121,6 +124,7 @@ insn_encode(Op, Opnds) ->
   case Op of
     'add' -> add(Opnds);
     'b'   -> b(Opnds);
+    'bl'  -> bl(Opnds);
     'ldr' -> ldr(Opnds);
     'mov' -> mov(Opnds);
     'ret' -> ret(Opnds);
