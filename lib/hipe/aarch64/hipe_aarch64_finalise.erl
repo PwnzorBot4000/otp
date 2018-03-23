@@ -39,6 +39,13 @@ expand_insn(I, Accum) ->
       Accum;
     #pseudo_blr{} ->
       [I|Accum];
+    #pseudo_call{funv=FunV,sdesc=SDesc,contlab=ContLab,linkage=Linkage} ->
+      [hipe_aarch64:mk_b_label(ContLab),
+       case FunV of
+	 #aarch64_temp{} -> hipe_aarch64:mk_blx(FunV, SDesc);
+	 _ -> hipe_aarch64:mk_bl(FunV, SDesc, Linkage)
+       end |
+       Accum];
     #pseudo_li{} ->
       [I|Accum];
     #b_fun{} ->

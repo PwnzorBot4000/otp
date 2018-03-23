@@ -35,6 +35,8 @@
 
      mk_bl/3,
 
+     mk_blx/2,
+
      mk_cmp/3,
 
      mk_sdesc/4,
@@ -123,6 +125,8 @@ mk_b_label(Cond, Label) -> #b_label{'cond'=Cond, label=Label}.
 mk_b_label(Label) -> mk_b_label('al', Label).
 
 mk_bl(Fun, SDesc, Linkage) -> #bl{'fun'=Fun, sdesc=SDesc, linkage=Linkage}.
+
+mk_blx(Src, SDesc) -> #blx{src=Src, sdesc=SDesc}.
 
 mk_cmp(CmpOp, Src, Am1) -> #cmp{cmpop=CmpOp, src=Src, am1=Am1}.
 
