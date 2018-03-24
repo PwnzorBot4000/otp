@@ -28,6 +28,8 @@
 	 is_prim/1,
      prim_prim/1,
 
+	 mk_alu/5,
+
      mk_b_fun/2,
 
      mk_b_label/2,
@@ -38,6 +40,8 @@
      mk_blx/2,
 
      mk_cmp/3,
+
+	 mk_comment/1,
 
      mk_sdesc/4,
 
@@ -84,6 +88,8 @@
 	 mk_li/3,
 
      mk_addi/4,
+
+	 try_aluop_imm/2,
 
 	 mk_defun/8,
 	 defun_mfa/1,
@@ -132,6 +138,8 @@ mk_cmp(CmpOp, Src, Am1) -> #cmp{cmpop=CmpOp, src=Src, am1=Am1}.
 
 mk_sdesc(ExnLab, FSize, Arity, Live) ->
   #aarch64_sdesc{exnlab=ExnLab, fsize=FSize, arity=Arity, live=Live}.
+
+mk_comment(Term) -> #comment{term=Term}.
 
 mk_label(Label) -> #label{label=Label}.
 is_label(I) -> case I of #label{} -> true; _ -> false end.

@@ -46,13 +46,154 @@ conv_insn_list([], _, Data) ->
 
 conv_insn(I, Map, Data) ->
   case I of
+    #alu{} -> conv_alu(I, Map, Data);
+    #alub{} -> conv_alub(I, Map, Data);
     #call{} -> conv_call(I, Map, Data);
+    #comment{} -> conv_comment(I, Map, Data);
     #enter{} -> conv_enter(I, Map, Data);
     #label{} -> conv_label(I, Map, Data);
+    #load{} -> conv_load(I, Map, Data);
     #load_atom{} -> conv_load_atom(I, Map, Data);
     #return{} -> conv_return(I, Map, Data);
     _ -> exit({?MODULE,conv_insn,I})
   end.
+
+conv_alu(I, Map, Data) ->
+  %% dst = src1 aluop src2
+  {Dst, Map0} = conv_dst(hipe_rtl:alu_dst(I), Map),
+  {Src1, Map1} = conv_src(hipe_rtl:alu_src1(I), Map0),
+  {Src2, Map2} = conv_src(hipe_rtl:alu_src2(I), Map1),
+  RtlAluOp = hipe_rtl:alu_op(I),
+  S = false,
+  I2 = mk_alu(S, Dst, Src1, RtlAluOp, Src2),
+  {I2, Map2, Data}.
+
+conv_arith(RtlAluOp) -> % RtlAluOp \ RtlShiftOp -> ArmArithOp
+  case RtlAluOp of
+    'add' -> 'add';
+    'sub' -> 'sub';
+    'mul' -> 'mul';
+    'or'  -> 'orr';
+    'and' -> 'and';
+    'xor' -> 'eor'
+  end.
+
+conv_cmpop('add') -> 'cmn';
+conv_cmpop('sub') -> 'cmp';
+conv_cmpop('and') -> 'tst';
+conv_cmpop('xor') -> 'teq';
+conv_cmpop(_) -> none.
+
+mk_alu(S, Dst, Src1, RtlAluOp, Src2) ->
+  case hipe_rtl:is_shift_op(RtlAluOp) of
+    true ->
+      throw("unimplemented");
+    false ->
+      mk_arith(S, Dst, Src1, conv_arith(RtlAluOp), Src2)
+  end.
+
+mk_arith(S, Dst, Src1, ArithOp, Src2) ->
+  case hipe_aarch64:is_temp(Src1) of
+    true ->
+      case hipe_aarch64:is_temp(Src2) of
+	true ->
+	  mk_arith_rr(S, Dst, Src1, ArithOp, Src2);
+	_ ->
+	  mk_arith_ri(S, Dst, Src1, ArithOp, Src2)
+      end;
+    _ ->
+      case hipe_aarch64:is_temp(Src2) of
+	true ->
+	  mk_arith_ir(S, Dst, Src1, ArithOp, Src2);
+	_ ->
+	  mk_arith_ii(S, Dst, Src1, ArithOp, Src2)
+      end
+  end.
+
+mk_arith_ii(_S, _Dst, _Src1, _ArithOp, _Src2) ->
+  throw("unimplemented").
+
+mk_arith_ir(_S, _Dst, _Src1, _ArithOp, _Src2) ->
+  throw("unimplemented").
+
+mk_arith_ri(_S, _Dst, _Src1, _ArithOp, _Src2) ->
+  throw("unimplemented").
+
+mk_arith_rr(S, Dst, Src1, ArithOp, Src2) ->
+  case {ArithOp,S} of
+    {'mul',true} ->
+      throw("unimplemented");
+    _ ->
+      [hipe_aarch64:mk_alu(ArithOp, S, Dst, Src1, Src2)]
+  end.
+
+fix_aluop_imm(AluOp, Imm) -> % {FixAm1,NewAluOp,Am1}
+  case hipe_aarch64:try_aluop_imm(AluOp, Imm) of
+    {NewAluOp,Am1} -> {[], NewAluOp, Am1};
+    [] ->
+      Tmp = new_untagged_temp(),
+      {mk_li(Tmp, Imm), AluOp, Tmp}
+  end.
+
+conv_alub(I, Map, Data) ->
+  %% dst = src1 aluop src2; if COND goto label
+  {Src1, Map0} = conv_src(hipe_rtl:alub_src1(I), Map),
+  {Src2, Map1} = conv_src(hipe_rtl:alub_src2(I), Map0),
+  RtlAluOp = hipe_rtl:alub_op(I),
+  RtlCond = hipe_rtl:alub_cond(I),
+  HasDst = hipe_rtl:alub_has_dst(I),
+  CmpOp = conv_cmpop(RtlAluOp),
+  Cond0 = conv_alub_cond(RtlAluOp, RtlCond),
+  case (not HasDst) andalso CmpOp =/= none of
+    true ->
+      I1 = mk_branch(Src1, CmpOp, Src2, Cond0,
+		     hipe_rtl:alub_true_label(I),
+		     hipe_rtl:alub_false_label(I),
+		     hipe_rtl:alub_pred(I)),
+      {I1, Map1, Data};
+    false ->
+      {Dst, Map2} =
+	case HasDst of
+	  false -> {new_untagged_temp(), Map1};
+	  true -> conv_dst(hipe_rtl:alub_dst(I), Map1)
+	end,
+      Cond =
+	case {RtlAluOp,Cond0} of
+	  {'mul','vs'} -> 'ne';	% overflow becomes not-equal
+	  {'mul','vc'} -> 'eq';	% no-overflow becomes equal
+	  {'mul',_} -> exit({?MODULE,I});
+	  {_,_} -> Cond0
+	end,
+      I2 = mk_pseudo_bc(
+	     Cond,
+	     hipe_rtl:alub_true_label(I),
+	     hipe_rtl:alub_false_label(I),
+	     hipe_rtl:alub_pred(I)),
+      S = true,
+      I1 = mk_alu(S, Dst, Src1, RtlAluOp, Src2),
+      {I1 ++ I2, Map2, Data}
+  end.
+
+mk_branch(Src1, CmpOp, Src2, Cond, TrueLab, FalseLab, Pred) ->
+  case hipe_aarch64:is_temp(Src1) of
+    true ->
+      case hipe_aarch64:is_temp(Src2) of
+	true ->
+	  mk_branch_rr(Src1, CmpOp, Src2, Cond, TrueLab, FalseLab, Pred);
+	_ ->
+	  mk_branch_ri(Src1, CmpOp, Src2, Cond, TrueLab, FalseLab, Pred)
+      end;
+    _ ->
+      throw("unimplemented")
+  end.
+
+mk_branch_ri(Src, CmpOp, Imm, Cond, TrueLab, FalseLab, Pred) ->
+  {FixAm1,NewCmpOp,Am1} = fix_aluop_imm(CmpOp, Imm),
+  FixAm1 ++ mk_branch_rr(Src, NewCmpOp, Am1, Cond, TrueLab, FalseLab, Pred).
+
+mk_branch_rr(Src, CmpOp, Am1, Cond, TrueLab, FalseLab, Pred) ->
+  [hipe_aarch64:mk_cmp(CmpOp, Src, Am1) |
+   mk_pseudo_bc(Cond, TrueLab, FalseLab, Pred)].
 
 conv_call(I, Map, Data) ->
   {Args, Map0} = conv_src_list(hipe_rtl:call_arglist(I), Map),
@@ -153,6 +294,10 @@ mk_store_args([Arg|Args], PrevOffset, Tail) ->
 mk_store_args([], _, Tail) ->
   Tail.
 
+conv_comment(I, Map, Data) ->
+  I2 = [hipe_aarch64:mk_comment(hipe_rtl:comment_text(I))],
+  {I2, Map, Data}.
+
 conv_enter(I, Map, Data) ->
   {Args, Map0} = conv_src_list(hipe_rtl:enter_arglist(I), Map),
   {Fun, Map1} = conv_fun(hipe_rtl:enter_fun(I), Map0),
@@ -167,6 +312,77 @@ mk_enter(Fun, Args, Linkage) ->
 conv_label(I, Map, Data) ->
   I2 = [hipe_aarch64:mk_label(hipe_rtl:label_name(I))],
   {I2, Map, Data}.
+
+conv_load(I, Map, Data) ->
+  {Dst, Map0} = conv_dst(hipe_rtl:load_dst(I), Map),
+  {Base1, Map1} = conv_src(hipe_rtl:load_src(I), Map0),
+  {Base2, Map2} = conv_src(hipe_rtl:load_offset(I), Map1),
+  LoadSize = hipe_rtl:load_size(I),
+  LoadSign = hipe_rtl:load_sign(I),
+  I2 = mk_load(Dst, Base1, Base2, LoadSize, LoadSign),
+  {I2, Map2, Data}.
+
+mk_load(Dst, Base1, Base2, LoadSize, LoadSign) ->
+  case {LoadSize,LoadSign} of
+    {byte,signed} ->
+      case hipe_aarch64:is_temp(Base1) of
+	true ->
+	  case hipe_aarch64:is_temp(Base2) of
+	    true ->
+	      mk_ldrsb_rr(Dst, Base1, Base2);
+	    _ ->
+	      mk_ldrsb_ri(Dst, Base1, Base2)
+	  end;
+	_ ->
+	  case hipe_aarch64:is_temp(Base2) of
+	    true ->
+	      mk_ldrsb_ri(Dst, Base2, Base1);
+	    _ ->
+	      mk_ldrsb_ii(Dst, Base1, Base2)
+	  end
+      end;
+    _ ->
+      LdOp =
+	case LoadSize of
+	  byte -> 'ldrb';
+	  int32 -> 'ldr';
+	  word -> 'ldr'
+	end,
+      case hipe_aarch64:is_temp(Base1) of
+	true ->
+	  case hipe_aarch64:is_temp(Base2) of
+	    true ->
+	      mk_load_rr(Dst, Base1, Base2, LdOp);
+	    _ ->
+	      mk_load_ri(Dst, Base1, Base2, LdOp)
+	  end;
+	_ ->
+	  case hipe_aarch64:is_temp(Base2) of
+	    true ->
+	      mk_load_ri(Dst, Base2, Base1, LdOp);
+	    _ ->
+	      mk_load_ii(Dst, Base1, Base2, LdOp)
+	  end
+      end
+  end.
+
+mk_load_ii(_Dst, _Base1, _Base2, _LdOp) ->
+  throw("unimplemented").
+   
+mk_load_ri(Dst, Base, Offset, LdOp) ->
+  hipe_aarch64:mk_load(LdOp, Dst, Base, Offset, 'new', []).
+
+mk_load_rr(_Dst, _Base1, _Base2, _LdOp) ->
+  throw("unimplemented").
+
+mk_ldrsb_ii(_Dst, _Base1, _Base2) ->
+  throw("unimplemented").
+   
+mk_ldrsb_ri(_Dst, _Base, Offset) when is_integer(Offset) ->
+  throw("unimplemented").
+
+mk_ldrsb_rr(_Dst, _Base1, _Base2) ->
+  throw("unimplemented").
 
 conv_load_atom(I, Map, Data) ->
   {Dst, Map0} = conv_dst(hipe_rtl:load_atom_dst(I), Map),
@@ -187,12 +403,57 @@ I2 = mk_move(mk_rv(), Arg,
          [hipe_aarch64:mk_pseudo_blr()]),
 {I2, Map0, Data}.
 
+%%% Create a conditional branch.
+
+mk_pseudo_bc(Cond, TrueLabel, FalseLabel, Pred) ->
+  [hipe_aarch64:mk_pseudo_bc(Cond, TrueLabel, FalseLabel, Pred)].
+
 %%% Load an integer constant into a register.
 
 mk_li(Dst, Value) -> mk_li(Dst, Value, []).
 
 mk_li(Dst, Value, Tail) ->
   hipe_aarch64:mk_li(Dst, Value, Tail).
+
+%%% Convert an RTL condition code.
+
+conv_alub_cond(RtlAluOp, Cond) ->	% may be unsigned, depends on aluop
+  %% Note: ARM has a non-standard definition of the Carry flag:
+  %% 'cmp', 'sub', and 'rsb' define Carry as the NEGATION of Borrow.
+  %% This means that the mapping between C/Z combinations and
+  %% conditions like "lower" and "higher" becomes non-standard.
+  %% (See conv_branch_cond/1 which maps ltu to lo/carry-clear,
+  %% while x86 maps ltu to b/carry-set.)
+  %% Here in conv_alub_cond/2 it means that the mapping of unsigned
+  %% conditions also has to consider the alu operator, since e.g.
+  %% 'add' and 'sub' behave differently with regard to Carry.
+  case {RtlAluOp, Cond} of	% handle allowed alub unsigned conditions
+    {'add', 'ltu'} -> 'hs';	% add+ltu == unsigned overflow == carry set == hs
+    %% add more cases when needed
+    {'sub', _} -> conv_branch_cond(Cond);
+    _ -> conv_cond(Cond)
+  end.
+
+conv_cond(Cond) ->	% only signed
+  case Cond of
+    eq	-> 'eq';
+    ne	-> 'ne';
+    gt	-> 'gt';
+    ge	-> 'ge';
+    lt	-> 'lt';
+    le	-> 'le';
+    overflow -> 'vs';
+    not_overflow -> 'vc'
+  end.
+
+conv_branch_cond(Cond) -> % may be unsigned
+  case Cond of
+    gtu -> 'hi';
+    geu -> 'hs';
+    ltu -> 'lo';
+    leu -> 'ls';
+    _   -> conv_cond(Cond)
+  end.    
 
 %%% Split a list of formal or actual parameters into the
 %%% part passed in registers and the part passed on the stack.
@@ -225,7 +486,7 @@ conv_fun(Fun, Map) ->
       case hipe_rtl:is_reg(Fun) of
     false ->
       if is_atom(Fun) ->
-          exit("atom");
+	      {hipe_aarch64:mk_prim(Fun), Map};
          true ->
           {conv_mfa(Fun), Map}
       end
@@ -279,6 +540,8 @@ conv_dst(Opnd, Map) ->
       _ -> hipe_aarch64_registers:is_precoloured_gpr(Name)
     end,
   case IsPrecoloured of
+    true ->
+      {hipe_aarch64:mk_temp(Name, Type), Map};
     false ->
       case vmap_lookup(Map, Opnd) of
 	{value, NewTemp} ->
@@ -305,6 +568,11 @@ mk_sp() ->
 
 mk_rv() ->
   hipe_aarch64:mk_temp(hipe_aarch64_registers:return_value(), 'tagged').
+
+%%% new_untagged_temp -- conjure up an untagged scratch reg
+
+new_untagged_temp() ->
+  hipe_aarch64:mk_new_temp('untagged').
 
 %%% new_tagged_temp -- conjure up a tagged scratch reg
 
