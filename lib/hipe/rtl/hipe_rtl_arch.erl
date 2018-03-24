@@ -104,6 +104,8 @@ heap_pointer() ->	% {GetHPInsn, HPReg, PutHPInsn}
       heap_pointer_from_reg(hipe_ppc_registers:heap_pointer());
     arm ->
       heap_pointer_from_reg(hipe_arm_registers:heap_pointer());
+    aarch64 ->
+      heap_pointer_from_reg(hipe_aarch64_registers:heap_pointer());
     x86 ->
       x86_heap_pointer();
     amd64 ->
@@ -148,6 +150,8 @@ heap_limit() ->	% {GetHLIMITInsn, HLIMITReg}
     ppc64 ->
       heap_limit_from_pcb();
     arm ->
+      heap_limit_from_pcb();
+    aarch64 ->
       heap_limit_from_pcb();
     x86 ->
       heap_limit_from_reg(hipe_x86_registers:heap_limit());
@@ -638,6 +642,8 @@ proc_pointer() ->	% must not be exported
       hipe_rtl:mk_reg_gcsafe(hipe_ppc_registers:proc_pointer());
     arm ->
       hipe_rtl:mk_reg_gcsafe(hipe_arm_registers:proc_pointer());
+    aarch64 ->
+      hipe_rtl:mk_reg_gcsafe(hipe_aarch64_registers:proc_pointer());
     x86 ->
       hipe_rtl:mk_reg_gcsafe(hipe_x86_registers:proc_pointer());
     amd64 ->
