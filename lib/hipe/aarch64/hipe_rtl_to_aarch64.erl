@@ -55,6 +55,7 @@ conv_insn(I, Map, Data) ->
     #load{} -> conv_load(I, Map, Data);
     #load_atom{} -> conv_load_atom(I, Map, Data);
     #return{} -> conv_return(I, Map, Data);
+    #store{} -> conv_store(I, Map, Data);
     _ -> exit({?MODULE,conv_insn,I})
   end.
 
@@ -116,8 +117,14 @@ mk_arith_ii(_S, _Dst, _Src1, _ArithOp, _Src2) ->
 mk_arith_ir(_S, _Dst, _Src1, _ArithOp, _Src2) ->
   throw("unimplemented").
 
-mk_arith_ri(_S, _Dst, _Src1, _ArithOp, _Src2) ->
-  throw("unimplemented").
+mk_arith_ri(S, Dst, Src1, ArithOp, Src2) ->
+  case ArithOp of
+    'mul' -> % mul/smull only take reg/reg operands
+      throw("unimplemented");
+    _ -> % add/sub/orr/and/eor have reg/am1 operands
+      {FixAm1,NewArithOp,Am1} = fix_aluop_imm(ArithOp, Src2),
+      FixAm1 ++ [hipe_aarch64:mk_alu(NewArithOp, S, Dst, Src1, Am1)]
+  end.
 
 mk_arith_rr(S, Dst, Src1, ArithOp, Src2) ->
   case {ArithOp,S} of
@@ -403,6 +410,57 @@ I2 = mk_move(mk_rv(), Arg,
          [hipe_aarch64:mk_pseudo_blr()]),
 {I2, Map0, Data}.
 
+conv_store(I, Map, Data) ->
+  {Base, Map0} = conv_src(hipe_rtl:store_base(I), Map),
+  {Src, Map1} = conv_src(hipe_rtl:store_src(I), Map0),
+  {Offset, Map2} = conv_src(hipe_rtl:store_offset(I), Map1),
+  StoreSize = hipe_rtl:store_size(I),
+  I2 = mk_store(Src, Base, Offset, StoreSize),
+  {I2, Map2, Data}.
+
+mk_store(Src, Base, Offset, StoreSize) ->
+  StOp =
+    case StoreSize of
+      byte -> 'strb';
+      int32 -> 'str';
+      word -> 'str'
+    end,
+  case hipe_aarch64:is_temp(Src) of
+    true ->
+      mk_store2(Src, Base, Offset, StOp);
+    _ ->
+      Tmp = new_untagged_temp(),
+      mk_li(Tmp, Src,
+	    mk_store2(Tmp, Base, Offset, StOp))
+  end.
+
+mk_store2(Src, Base, Offset, StOp) ->
+  case hipe_aarch64:is_temp(Base) of
+    true ->
+      case hipe_aarch64:is_temp(Offset) of
+	true ->
+	  mk_store_rr(Src, Base, Offset, StOp);
+	_ ->
+	  mk_store_ri(Src, Base, Offset, StOp)
+      end;
+    false ->
+      case hipe_aarch64:is_temp(Offset) of
+	true ->
+	  mk_store_ri(Src, Offset, Base, StOp);
+	_ ->
+	  mk_store_ii(Src, Base, Offset, StOp)
+      end
+  end.
+
+mk_store_ii(_Src, _Base, _Offset, _StOp) ->
+  throw("unimplemented").
+
+mk_store_ri(Src, Base, Offset, StOp) ->
+  hipe_aarch64:mk_store(StOp, Src, Base, Offset, 'new', []).
+   
+mk_store_rr(_Src, _Base, _Index, _StOp) ->
+  throw("unimplemented").
+
 %%% Create a conditional branch.
 
 mk_pseudo_bc(Cond, TrueLabel, FalseLabel, Pred) ->
@@ -536,7 +594,7 @@ conv_dst(Opnd, Map) ->
     end,
   IsPrecoloured =
     case Type of
-      'double' -> false; %hipe_arm_registers:is_precoloured_fpr(Name);
+      'double' -> false; %hipe_aarch64_registers:is_precoloured_fpr(Name);
       _ -> hipe_aarch64_registers:is_precoloured_gpr(Name)
     end,
   case IsPrecoloured of
