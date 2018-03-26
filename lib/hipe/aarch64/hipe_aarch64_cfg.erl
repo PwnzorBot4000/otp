@@ -49,6 +49,7 @@ is_branch(I) ->
   case I of
     #b_fun{} -> true;
     #b_label{'cond'='al'} -> true;
+    #pseudo_bc{} -> true;
     #pseudo_blr{} -> true;
     #pseudo_call{} -> true;
     #pseudo_tailcall{} -> true;
@@ -56,6 +57,8 @@ is_branch(I) ->
     #load{} -> false;
     #store{} -> false;
     #alu{} -> false;
+    #cmp{} -> false;
+    #comment{} -> false;
     #move{} -> false;
     #pseudo_move{} -> false;
     #pseudo_li{} -> false % to be removed: temporarily handling all false cases here 
@@ -66,6 +69,7 @@ branch_successors(Branch) ->
   case Branch of
     #b_fun{} -> [];
     #b_label{'cond'='al',label=Label} -> [Label];
+    #pseudo_bc{true_label=TrueLab,false_label=FalseLab} -> [FalseLab,TrueLab];
     #pseudo_blr{} -> [];
     #pseudo_call{contlab=ContLab, sdesc=#aarch64_sdesc{exnlab=ExnLab}} ->
       case ExnLab of
@@ -77,6 +81,8 @@ branch_successors(Branch) ->
 
 branch_preds(Branch) ->
   case Branch of
+    #pseudo_bc{true_label=TrueLab,false_label=FalseLab,pred=Pred} ->
+      [{FalseLab, 1.0-Pred}, {TrueLab, Pred}];
     #pseudo_call{contlab=ContLab, sdesc=#aarch64_sdesc{exnlab=[]}} ->
       %% A function can still cause an exception, even if we won't catch it
       [{ContLab, 1.0-hipe_bb_weights:call_exn_pred()}]

@@ -33,13 +33,19 @@ insn_use_all(I) ->
 %%%
 insn_def_gpr(I) ->
   case I of
+    #alu{dst=Dst} -> [Dst];
+    #load{dst=Dst} -> [Dst];
     #move{dst=Dst} -> [Dst];
     #pseudo_call{} -> call_clobbered_gpr();
     #pseudo_li{dst=Dst} -> [Dst];
     #pseudo_move{dst=Dst} -> [Dst];
     #pseudo_tailcall{} -> [];
     #pseudo_tailcall_prepare{} -> tailcall_clobbered_gpr();
-    #pseudo_blr{} -> []
+    #pseudo_bc{} -> [];
+    #pseudo_blr{} -> [];
+    #cmp{} -> [];
+    #comment{} -> [];
+    #store{} -> []
     %_ -> [] % temporarily including all default cases explicitly
   end.
 
@@ -61,6 +67,9 @@ all_fp_pseudos() -> [].	% XXX: for now
 
 insn_use_gpr(I) ->
   case I of
+    #alu{src=Src,am1=Am1} -> am1_use(Am1, [Src]);
+    #cmp{src=Src,am1=Am1} -> am1_use(Am1, [Src]);
+    #load{am2=Am2} -> am2_use(Am2, []);
     #move{am1=Am1} -> am1_use(Am1, []);
     #pseudo_blr{} ->
       LR = hipe_aarch64:mk_temp(hipe_aarch64_registers:lr(), 'untagged'),
@@ -71,8 +80,11 @@ insn_use_gpr(I) ->
     #pseudo_move{src=Src} -> [Src];
     #pseudo_tailcall{funv=FunV,arity=Arity,stkargs=StkArgs} ->
       addargs(StkArgs, addtemps(tailcall_clobbered_gpr(), funv_use(FunV, arity_use_gpr(Arity))));
+    #store{src=Src,am2=Am2} -> am2_use(Am2, [Src]);
+    #pseudo_bc{} -> [];
     #pseudo_li{} -> [];
-    #pseudo_tailcall_prepare{} -> []
+    #pseudo_tailcall_prepare{} -> [];
+    #comment{} -> []
     %_ -> [] % temporarily including all default cases explicitly
   end.
 
@@ -99,7 +111,17 @@ funv_use(FunV, Set) ->
 
 am1_use(Am1, Set) ->
   case Am1 of
-    {_Size,_Imm,_Shift} -> Set
+    {_Size,_Imm,_Shift} -> Set;
+    #aarch64_temp{} -> addtemp(Am1, Set)
+  end.
+
+am2_use(#am2{src=Src,offset=Am2Offset}, Set) ->
+  Set1 = addtemp(Src, Set),
+  case Am2Offset of
+    #aarch64_temp{} -> addtemp(Am2Offset, Set1);
+    {Src2,_} -> addtemp(Src2, Set1);
+    {Src2,_,_} -> addtemp(Src2, Set1);
+    Int when is_integer(Int) -> Set1
   end.
 
 %%%
