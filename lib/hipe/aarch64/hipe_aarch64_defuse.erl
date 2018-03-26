@@ -39,10 +39,12 @@ insn_def_gpr(I) ->
     #pseudo_call{} -> call_clobbered_gpr();
     #pseudo_li{dst=Dst} -> [Dst];
     #pseudo_move{dst=Dst} -> [Dst];
+    #pseudo_spill_move{dst=Dst, temp=Temp} -> [Dst, Temp];
     #pseudo_tailcall{} -> [];
     #pseudo_tailcall_prepare{} -> tailcall_clobbered_gpr();
     #pseudo_bc{} -> [];
     #pseudo_blr{} -> [];
+    #b_label{} -> [];
     #cmp{} -> [];
     #comment{} -> [];
     #store{} -> []
@@ -78,12 +80,14 @@ insn_use_gpr(I) ->
     #pseudo_call{funv=FunV,sdesc=#aarch64_sdesc{arity=Arity}} ->
       funv_use(FunV, arity_use_gpr(Arity));
     #pseudo_move{src=Src} -> [Src];
+    #pseudo_spill_move{src=Src} -> [Src];
     #pseudo_tailcall{funv=FunV,arity=Arity,stkargs=StkArgs} ->
       addargs(StkArgs, addtemps(tailcall_clobbered_gpr(), funv_use(FunV, arity_use_gpr(Arity))));
     #store{src=Src,am2=Am2} -> am2_use(Am2, [Src]);
     #pseudo_bc{} -> [];
     #pseudo_li{} -> [];
     #pseudo_tailcall_prepare{} -> [];
+    #b_label{} -> [];
     #comment{} -> []
     %_ -> [] % temporarily including all default cases explicitly
   end.

@@ -48,17 +48,44 @@ do_insns([], _TempMap, _Strategy, Accum, DidSpill) ->
 
 do_insn(I, TempMap, Strategy) ->
   case I of
+    #alu{} -> do_alu(I, TempMap, Strategy);
+    #cmp{} -> do_cmp(I, TempMap, Strategy);
+    #load{} -> do_load(I, TempMap, Strategy);
     #move{} -> do_move(I, TempMap, Strategy);
     #pseudo_call{} -> do_pseudo_call(I, TempMap, Strategy);
     #pseudo_li{} -> do_pseudo_li(I, TempMap, Strategy);
     #pseudo_move{} -> do_pseudo_move(I, TempMap, Strategy);
+    #pseudo_spill_move{} -> do_pseudo_spill_move(I, TempMap, Strategy);
     #pseudo_tailcall{} -> do_pseudo_tailcall(I, TempMap, Strategy);
+    #store{} -> do_store(I, TempMap, Strategy);
+    #pseudo_bc{} -> {[I], false};
     #pseudo_blr{} -> {[I], false};
-    #pseudo_tailcall_prepare{} -> {[I], false}
+    #pseudo_tailcall_prepare{} -> {[I], false};
+    #b_label{} -> {[I], false};
+    #comment{} -> {[I], false}
     %_ -> {[I], false} %temp adding all default cases explicitly
   end.
 
 %%% Fix relevant instruction types.
+
+do_alu(I=#alu{dst=Dst,src=Src,am1=Am1}, TempMap, Strategy) ->
+  {FixDst,NewDst,DidSpill1} = fix_dst(Dst, TempMap, Strategy),
+  {FixSrc,NewSrc,DidSpill2} = fix_src1(Src, TempMap, Strategy),
+  {FixAm1,NewAm1,DidSpill3} = fix_am1(Am1, TempMap, Strategy),
+  NewI = I#alu{dst=NewDst,src=NewSrc,am1=NewAm1},
+  {FixSrc ++ FixAm1 ++ [NewI | FixDst], DidSpill1 or DidSpill2 or DidSpill3}.
+
+do_cmp(I=#cmp{src=Src,am1=Am1}, TempMap, Strategy) ->
+  {FixSrc,NewSrc,DidSpill1} = fix_src1(Src, TempMap, Strategy),
+  {FixAm1,NewAm1,DidSpill2} = fix_am1(Am1, TempMap, Strategy),
+  NewI = I#cmp{src=NewSrc,am1=NewAm1},
+  {FixSrc ++ FixAm1 ++ [NewI], DidSpill1 or DidSpill2}.
+
+do_load(I=#load{dst=Dst,am2=Am2}, TempMap, Strategy) ->
+  {FixDst,NewDst,DidSpill1} = fix_dst(Dst, TempMap, Strategy),
+  {FixAm2,NewAm2,DidSpill2} = fix_am2(Am2, TempMap, Strategy),
+  NewI = I#load{dst=NewDst,am2=NewAm2},
+  {FixAm2 ++ [NewI | FixDst], DidSpill1 or DidSpill2}.
 
 do_move(I=#move{dst=Dst,am1=Am1}, TempMap, Strategy) ->
   {FixDst,NewDst,DidSpill1} = fix_dst(Dst, TempMap, Strategy),
@@ -92,10 +119,21 @@ do_pseudo_move(I=#pseudo_move{dst=Dst,src=Src}, TempMap, Strategy) ->
       {[I], false}
   end.
 
+do_pseudo_spill_move(I = #pseudo_spill_move{temp=Temp}, TempMap, _Strategy) ->
+  %% Temp is above the low water mark and must not have been spilled
+  false = temp_is_spilled(Temp, TempMap),
+  {[I], false}. % nothing to do
+
 do_pseudo_tailcall(I=#pseudo_tailcall{funv=FunV}, TempMap, Strategy) ->
   {FixFunV,NewFunV,DidSpill} = fix_funv(FunV, TempMap, Strategy),
   NewI = I#pseudo_tailcall{funv=NewFunV},
   {FixFunV ++ [NewI], DidSpill}.
+
+do_store(I=#store{src=Src,am2=Am2}, TempMap, Strategy) ->
+  {FixSrc,NewSrc,DidSpill1} = fix_src1(Src, TempMap, Strategy),
+  {FixAm2,NewAm2,DidSpill2} = fix_am2(Am2, TempMap, Strategy),
+  NewI = I#store{src=NewSrc,am2=NewAm2},
+  {FixSrc ++ FixAm2 ++ [NewI], DidSpill1 or DidSpill2}.
 
 %%% Fix Dst and Src operands.
 
@@ -105,13 +143,45 @@ fix_funv(FunV, TempMap, Strategy) ->
     _ -> {[], FunV, false}
   end.
 
-fix_am1(Am1, _, _) ->
+fix_am1(Am1, TempMap, Strategy) ->
   case Am1 of
+    #aarch64_temp{} ->
+      fix_src2(Am1, TempMap, Strategy);
     {_Size,_Imm,_Shift} -> {[], Am1, false}
   end.
 
+fix_am2(Am2=#am2{src=Src2,offset=Offset}, TempMap, Strategy) ->
+  {FixSrc2,NewSrc2,DidSpill1} = fix_src2(Src2, TempMap, Strategy),
+  {FixOffset,NewOffset,DidSpill2} = fix_am2offset(Offset, TempMap, Strategy),
+  NewAm2 = Am2#am2{src=NewSrc2,offset=NewOffset},
+  %% order matters: FixOffset may clobber temp2/Src2
+  {FixOffset ++ FixSrc2, NewAm2, DidSpill1 or DidSpill2}.
+
+fix_am2offset(Offset, TempMap, Strategy) ->
+  case Offset of
+    #aarch64_temp{} ->
+      fix_src3(Offset, TempMap, Strategy);
+    {Src3,rrx} ->
+      {Fix,New,DidSpill} = fix_src3(Src3, TempMap, Strategy),
+      {Fix, {New,rrx}, DidSpill};
+    {Src3,ShiftOp,Imm5} ->
+      {Fix,New,DidSpill} = fix_src3(Src3, TempMap, Strategy),
+      {Fix, {New,ShiftOp,Imm5}, DidSpill};
+    _ when is_integer(Offset) ->
+      {[], Offset, false}
+  end.
+
+fix_src1(Src, TempMap, Strategy) ->
+  fix_src(Src, TempMap, temp1(Strategy)).
+
 temp1('new') -> [];
 temp1('fixed') -> hipe_aarch64_registers:temp1().
+
+fix_src2(Src, TempMap, Strategy) ->
+  fix_src(Src, TempMap, temp2(Strategy)).
+
+temp2('new') -> [];
+temp2('fixed') -> hipe_aarch64_registers:temp2().
 
 fix_src3(Src, TempMap, Strategy) ->
   fix_src(Src, TempMap, temp3(Strategy)).

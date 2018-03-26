@@ -61,6 +61,7 @@ is_branch(I) ->
     #comment{} -> false;
     #move{} -> false;
     #pseudo_move{} -> false;
+    #pseudo_spill_move{} -> false;
     #pseudo_li{} -> false % to be removed: temporarily handling all false cases here 
     %_ -> false           % to prevent unhandled cases return false without warning.
   end.

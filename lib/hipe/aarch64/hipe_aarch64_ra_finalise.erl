@@ -37,14 +37,38 @@ ra_insn(I, Map, Accum) ->
 
 ra_insn_1(I, Map) ->
   case I of
+    #alu{} -> ra_alu(I, Map);
+    #cmp{} -> ra_cmp(I, Map);
+    #load{} -> ra_load(I, Map);
     #move{} -> ra_move(I, Map);
     #pseudo_call{} -> ra_pseudo_call(I, Map);
     #pseudo_li{} -> ra_pseudo_li(I, Map);
+    #pseudo_spill_move{} -> ra_pseudo_spill_move(I, Map);
     #pseudo_tailcall{} -> ra_pseudo_tailcall(I, Map);
+    #store{} -> ra_store(I, Map);
     #pseudo_blr{} -> I;
-    #pseudo_tailcall_prepare{} -> I
+    #pseudo_tailcall_prepare{} -> I;
+    #pseudo_bc{} -> I;
+    #b_label{} -> I;
+    #comment{} -> I
     % _ -> I % temporarily adding all default cases explicitly.
   end.
+
+ra_alu(I=#alu{dst=Dst,src=Src,am1=Am1}, Map) ->
+  NewDst = ra_temp(Dst, Map),
+  NewSrc = ra_temp(Src, Map),
+  NewAm1 = ra_am1(Am1, Map),
+  I#alu{dst=NewDst,src=NewSrc,am1=NewAm1}.
+
+ra_cmp(I=#cmp{src=Src,am1=Am1}, Map) ->
+  NewSrc = ra_temp(Src, Map),
+  NewAm1 = ra_am1(Am1, Map),
+  I#cmp{src=NewSrc,am1=NewAm1}.
+
+ra_load(I=#load{dst=Dst,am2=Am2}, Map) ->
+  NewDst = ra_temp(Dst, Map),
+  NewAm2 = ra_am2(Am2, Map),
+  I#load{dst=NewDst,am2=NewAm2}.
 
 ra_move(I=#move{dst=Dst,am1=Am1}, Map) ->
   NewDst = ra_temp(Dst, Map),
@@ -59,6 +83,12 @@ ra_pseudo_li(I=#pseudo_li{dst=Dst}, Map) ->
   NewDst = ra_temp(Dst, Map),
   I#pseudo_li{dst=NewDst}.
 
+ra_pseudo_spill_move(I=#pseudo_spill_move{dst=Dst,temp=Temp,src=Src}, Map) ->
+  NewDst = ra_temp(Dst, Map),
+  NewTemp = ra_temp(Temp, Map),
+  NewSrc = ra_temp(Src, Map),
+  I#pseudo_spill_move{dst=NewDst, temp=NewTemp, src=NewSrc}.
+
 ra_pseudo_tailcall(I=#pseudo_tailcall{funv=FunV,stkargs=StkArgs}, Map) ->
   NewFunV = ra_funv(FunV, Map),
   NewStkArgs = ra_args(StkArgs, Map),
@@ -71,6 +101,11 @@ ra_pseudo_move(I=#pseudo_move{dst=Dst,src=Src}, Map, Accum) ->
     true -> Accum;
     false -> [I#pseudo_move{dst=NewDst,src=NewSrc} | Accum]
   end.
+
+ra_store(I=#store{src=Src,am2=Am2}, Map) ->
+  NewSrc = ra_temp(Src, Map),
+  NewAm2 = ra_am2(Am2, Map),
+  I#store{src=NewSrc,am2=NewAm2}.
 
 %%% Tailcall stack arguments.
 
@@ -95,10 +130,31 @@ ra_funv(FunV, Map) ->
     _ -> FunV
   end.
 
-ra_am1(Am1, _) ->
+ra_am1(Am1, Map) ->
   case Am1 of
+    #aarch64_temp{} ->
+      ra_temp(Am1, Map);
     {_Size,_Imm,_Shift} ->
       Am1
+  end.
+
+ra_am2(Am2=#am2{src=Src2,offset=Offset}, Map) ->
+  NewSrc2 = ra_temp(Src2, Map),
+  NewOffset = ra_am2offset(Offset, Map),
+  Am2#am2{src=NewSrc2,offset=NewOffset}.
+
+ra_am2offset(Offset, Map) ->
+  case Offset of
+    #aarch64_temp{} ->
+      ra_temp(Offset, Map);
+    {Src3,rrx} ->
+      NewSrc3 = ra_temp(Src3, Map),
+      {NewSrc3,rrx};
+    {Src3,ShiftOp,Imm5} ->
+      NewSrc3 = ra_temp(Src3, Map),
+      {NewSrc3,ShiftOp,Imm5};
+    _ ->
+      Offset
   end.
 
 ra_temp(Temp, Map) ->

@@ -36,7 +36,13 @@
 	]).
 
 %% callbacks for hipe_regalloc_prepass, hipe_range_split
--export([update_bb/4,
+-export([mk_move/3,
+	mk_goto/2,
+    redirect_jmp/4,
+    new_label/1,
+    new_reg_nr/1,
+    update_reg_nr/3,
+    update_bb/4,
     subst_temps/3
     ]).
 
@@ -134,6 +140,33 @@ is_spill_move(Instruction, _) ->
 
 reg_nr(Reg, _) ->
   hipe_aarch64:temp_reg(Reg).
+
+mk_move(Src, Dst, _) ->
+  hipe_aarch64:mk_pseudo_move(Dst, Src).
+
+mk_goto(Label, _) ->
+  hipe_aarch64:mk_b_label(Label).
+
+redirect_jmp(Jmp, ToOld, ToNew, _) when is_integer(ToOld), is_integer(ToNew) ->
+  Ref = make_ref(),
+  put(Ref, false),
+  I = hipe_aarch64_subst:insn_lbls(
+	fun(Tgt) ->
+	    if Tgt =:= ToOld -> put(Ref, true), ToNew;
+	       is_integer(Tgt) -> Tgt
+	    end
+	end, Jmp),
+  true = erase(Ref), % Assert that something was rewritten
+  I.
+
+new_label(_) ->
+  hipe_gensym:get_next_label(aarch64).
+
+new_reg_nr(_) ->
+  hipe_gensym:get_next_var(aarch64).
+
+update_reg_nr(Nr, Temp, _) ->
+  hipe_aarch64:mk_temp(Nr, hipe_aarch64:temp_type(Temp)).
 
 subst_temps(SubstFun, Instr, _) ->
   hipe_aarch64_subst:insn_temps(
