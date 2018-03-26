@@ -65,9 +65,27 @@ do_insn(I, LiveOut, Context, FPoff) ->
       {do_pseudo_blr(I, Context, FPoff), context_framesize(Context)};
     #pseudo_call{} ->
       do_pseudo_call(I, LiveOut, Context, FPoff);
+    #pseudo_move{} ->
+      {do_pseudo_move(I, Context, FPoff), FPoff};
+    #pseudo_spill_move{} ->
+      {do_pseudo_spill_move(I, Context, FPoff), FPoff};
     #pseudo_tailcall{} ->
       {do_pseudo_tailcall(I, Context), context_framesize(Context)};
+    #alu{} ->
+      {[I], FPoff};
+    #b_label{} ->
+      {[I], FPoff};
+    #cmp{} ->
+      {[I], FPoff};
+    #comment{} ->
+      {[I], FPoff};
+    #load{} ->
+      {[I], FPoff};
     #move{} ->
+      {[I], FPoff};
+    #store{} ->
+      {[I], FPoff};
+    #pseudo_bc{} ->
       {[I], FPoff};
     #pseudo_li{} ->
       {[I], FPoff};
@@ -75,6 +93,49 @@ do_insn(I, LiveOut, Context, FPoff) ->
       {[I], FPoff}
     %_ ->  % temporarily adding all default cases explicitly.
     %  {[I], FPoff}
+  end.
+
+%%%
+%%% Moves, with Dst or Src possibly a pseudo
+%%%
+
+do_pseudo_move(I, Context, FPoff) ->
+  Dst = hipe_aarch64:pseudo_move_dst(I),
+  Src = hipe_aarch64:pseudo_move_src(I),
+  case temp_is_pseudo(Dst) of
+    true ->
+      Offset = pseudo_offset(Dst, FPoff, Context),
+      mk_store('str', Src, Offset, mk_sp(), []);
+    _ ->
+      case temp_is_pseudo(Src) of
+	true ->
+	  Offset = pseudo_offset(Src, FPoff, Context),
+	  mk_load('ldr', Dst, Offset, mk_sp(), []);
+	_ ->
+	  [hipe_aarch64:mk_move(Dst, Src)]
+      end
+  end.
+
+pseudo_offset(Temp, FPoff, Context) ->
+  FPoff + context_offset(Context, Temp).
+%%%
+%%% Moves from one spill slot to another
+%%%
+
+do_pseudo_spill_move(I, Context, FPoff) ->
+  #pseudo_spill_move{dst=Dst, temp=Temp, src=Src} = I,
+  case temp_is_pseudo(Src) andalso temp_is_pseudo(Dst) of
+    false -> % Register allocator changed its mind, turn back to move
+      do_pseudo_move(hipe_aarch64:mk_pseudo_move(Dst, Src), Context, FPoff);
+    true ->
+      SrcOffset = pseudo_offset(Src, FPoff, Context),
+      DstOffset = pseudo_offset(Dst, FPoff, Context),
+      case SrcOffset =:= DstOffset of
+	true -> []; % omit move-to-self
+	false ->
+	  mk_load('ldr', Temp, SrcOffset, mk_sp(),
+		  mk_store('str', Temp, DstOffset, mk_sp(), []))
+      end
   end.
 
 %%%
