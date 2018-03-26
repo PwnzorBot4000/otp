@@ -459,20 +459,29 @@ untag_mfa_or_prim(#aarch64_prim{prim=Prim}) -> Prim.
 
 fix_pc_refs(I, InsnAddress, FunAddress, LabelMap) ->
   case I of
-    {b, {Cond,{label,L}}, OrigI} ->
+    {b, {{'cond',Cond},{label,L}}, OrigI} ->
       LabelAddress = gb_trees:get(L, LabelMap) + FunAddress,
-      Imm26 = (LabelAddress - InsnAddress) div 4,
-      %% ensure Imm26 fits in a 26 bit sign-extended field
-      ?ASSERT(Imm26 =<   16#1FFFFFF),
-      ?ASSERT(Imm26 >= -(16#2000000)),
-      {b, {Cond,{imm26,Imm26 band 16#FFFFFFF}}, OrigI};
+      case Cond of
+        'al' ->
+          Imm26 = (LabelAddress - InsnAddress) div 4,
+          %% ensure Imm26 fits in a 26 bit sign-extended field
+          ?ASSERT(Imm26 =<   16#1FFFFFF),
+          ?ASSERT(Imm26 >= -(16#2000000)),
+          {b, {{'cond','al'},{imm26,Imm26}}, OrigI};
+        _ ->
+          Imm19 = (LabelAddress - InsnAddress) div 4,
+          %% ensure Imm19 fits in a 19 bit sign-extended field
+          ?ASSERT(Imm19 =<   16#3FFFF),
+          ?ASSERT(Imm19 >= -(16#40000)),
+          {b, {{'cond',Cond},{imm19,Imm19}}, OrigI}
+        end;
     {'.pseudo_li', {Dst,{label,L}}, OrigI} ->
       LabelAddress = gb_trees:get(L, LabelMap) + FunAddress,
       Imm19 = (LabelAddress - InsnAddress) div 4,
       %% ensure Imm19 fits in a 19 bit sign-extended field
       ?ASSERT(Imm19 =<   16#3FFFF),
       ?ASSERT(Imm19 >= -(16#40000)),
-      Am2 = {'pc-relative',{imm19,Imm19 band 16#FFFFF}},
+      Am2 = {'pc-relative',{imm19,Imm19}},
       {ldr, {do_cond('al'),Dst,Am2}, OrigI};
     _ -> I
   end.

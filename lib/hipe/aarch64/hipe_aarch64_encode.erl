@@ -46,9 +46,38 @@ bf(LeftBit, RightBit, Value) ->
   ?ASSERT(Value < (1 bsl ((LeftBit - RightBit) + 1))),
   Value bsl RightBit.
 
+% Bitfield accepting a signed number.
+bfs(LeftBit, RightBit, Value) ->
+  ?ASSERT(32 > LeftBit),
+  ?ASSERT(LeftBit >= RightBit),
+  ?ASSERT(RightBit >= 0),
+  ?ASSERT(Value >= (-1 bsl (LeftBit - RightBit))),
+  ?ASSERT(Value < (1 bsl (LeftBit - RightBit))),
+  (Value bsl RightBit) band ((1 bsl (LeftBit + 1)) - 1).
+
 -define(BF(LB,RB,V), bf(LB,RB,V)).
+-define(BFS(LB,RB,V), bfs(LB,RB,V)).
 -define(BIT(Pos,Val), ?BF(Pos,Pos,Val)).
 %%-define(BITS(N,Val), ?BF(N,0,Val)).
+
+'cond'(Cond) ->
+  case Cond of
+    'eq' -> 2#0000;	% equal
+    'ne' -> 2#0001;	% not equal
+    'cs' -> 2#0010;	% carry set
+    'cc' -> 2#0011;	% carry clear
+    'mi' -> 2#0100;	% minus / negative
+    'pl' -> 2#0101;	% plus/positive or zero
+    'vs' -> 2#0110;	% overflow
+    'vc' -> 2#0111;	% no overflow
+    'hi' -> 2#1000;	% unsigned higher
+    'ls' -> 2#1001;	% unsigned lower or same
+    'ge' -> 2#1010;	% signed greater than or equal
+    'lt' -> 2#1011;	% signed less than
+    'gt' -> 2#1100;	% signed greater than
+    'le' -> 2#1101;	% signed less than or equal
+    'al' -> 2#1110 	% always
+  end.
 
 %%%
 %%% AARCH64 Instructions
@@ -59,19 +88,30 @@ bf(LeftBit, RightBit, Value) ->
 data_imm_addsub_form(Sf, Op, S, Shift, Imm12, Rn, Rd) ->
   ?BIT(31,Sf) bor ?BIT(30,Op) bor ?BIT(29,S) bor ?BF(28,24,2#10001) bor ?BF(23,22,Shift) bor ?BF(21,10,Imm12) bor ?BF(9,5,Rn) bor ?BF(4,0,Rd).
 
-data_addsub_form(Op, {{'cond',_Cond},{s,S},{r,Rd},{r,Rn},Opnd}) ->
-  case Opnd of
+data_reg_ext_addsub_form(Sf, Op, S, Opt, Rm, Option, Imm3, Rn, Rd) ->
+  ?BIT(31,Sf) bor ?BIT(30,Op) bor ?BIT(29,S) bor ?BF(28,24,2#01011) bor ?BF(23,22,Opt) bor ?BIT(21, 1) bor ?BF(20,16,Rm) bor ?BF(15,13,Option) bor ?BF(12,10,Imm3) bor ?BF(9,5,Rn) bor ?BF(4,0,Rd).
+
+data_addsub_form(Op, S, {r,Rd}, {r,Rn}, AmOpnd) ->
+  case AmOpnd of
     {'immediate', {imm12, Imm12}, {imm2, Imm2}} ->
-      data_imm_addsub_form(2#1, Op, S, Imm2, Imm12, Rn, Rd)
+      data_imm_addsub_form(1, Op, S, Imm2, Imm12, Rn, Rd);
+    {r, Reg} ->
+      data_reg_ext_addsub_form(1, Op, S, 2#00, Reg, 2#011, 2#000, Rn, Rd)
   end.
 
-add(Opnds) -> data_addsub_form(2#0, Opnds).
-sub(Opnds) -> data_addsub_form(2#1, Opnds).
+add({{'cond', 'al'}, {s,S}, Dst, Opnd, AmOpnd}) ->
+  data_addsub_form(0, S, Dst, Opnd, AmOpnd).
+
+sub({{'cond', 'al'}, {s,S}, Dst, Opnd, AmOpnd}) ->
+  data_addsub_form(1, S, Dst, Opnd, AmOpnd).
+
+cmp({{'cond', 'al'}, Opnd, AmOpnd}) ->
+  data_addsub_form(1, 1, {r, 31}, Opnd, AmOpnd).
 
 data_mov_form(Sf, Opc, Hw, Imm16, Rd) ->
   ?BIT(31,Sf) bor ?BF(30,29,Opc) bor ?BF(28,23,2#100101) bor ?BF(22,21,Hw) bor ?BF(20,5,Imm16) bor ?BF(4,0,Rd).
 
-mov({_Cond, _S, {r, Dst}, Src}) ->
+mov({{'cond', 'al'}, {s,0}, {r, Dst}, Src}) ->
   case Src of
     {'immediate', {imm16, Imm16}, {imm2, Imm2}} ->
       data_mov_form(2#1, 2#00, Imm2, Imm16, Dst)
@@ -83,9 +123,9 @@ ldstr_imm_form(Size, V, Opc, Imm12, Rn, Rt) ->
   ?BF(31,30,Size) bor ?BF(29,27,2#111) bor ?BIT(26,V) bor ?BF(25,24,2#01) bor ?BF(23,22,Opc) bor ?BF(21,10,Imm12) bor ?BF(9,5,Rn) bor ?BF(4,0,Rt).
 
 ldstr_pcrel_form(Opc, V, Imm19, Rt) ->
-  ?BF(31,30,Opc) bor ?BF(29,27,2#011) bor ?BIT(26,V) bor ?BF(25,24,2#00) bor ?BF(23,5,Imm19) bor ?BF(4,0,Rt).
+  ?BF(31,30,Opc) bor ?BF(29,27,2#011) bor ?BIT(26,V) bor ?BF(25,24,2#00) bor ?BFS(23,5,Imm19) bor ?BF(4,0,Rt).
 
-ldr({_Cond, {r, Dst}, Src}) ->
+ldr({{'cond', 'al'}, {r, Dst}, Src}) ->
   case Src of
     {'immediate_offset', {r, Base}, {imm12, Offset}} ->
       ldstr_imm_form(2#11, 2#0, 2#01, Offset, Base, Dst);
@@ -93,7 +133,7 @@ ldr({_Cond, {r, Dst}, Src}) ->
       ldstr_pcrel_form(2#01, 2#0, Offset, Dst)
   end.
 
-str({_Cond, {r, Src}, Dst}) ->
+str({{'cond', 'al'}, {r, Src}, Dst}) ->
   case Dst of
     {'immediate_offset', {r, Base}, {imm12, Offset}} ->
       ldstr_imm_form(2#11, 2#0, 2#00, Offset, Base, Src)
@@ -102,16 +142,21 @@ str({_Cond, {r, Src}, Dst}) ->
 %%% Branches
 
 b_imm_form(Op, Imm26) ->
-  ?BIT(31, Op) bor ?BF(30,26,2#00101) bor ?BF(25,0,Imm26).
+  ?BIT(31, Op) bor ?BF(30,26,2#00101) bor ?BFS(25,0,Imm26).
 
 b_reg_form(Opc, Op2, Op3, Rn, Op4) ->
   ?BF(31,25,2#1101011) bor ?BF(24,21,Opc) bor ?BF(20,16,Op2) bor ?BF(15,10,Op3) bor ?BF(9,5,Rn) bor ?BF(4,0,Op4).
 
-b({_Cond, {imm26, Offset}}) ->
-  b_imm_form(2#0, Offset).
+bcond_imm_form(O1, Imm19, O0, Cond) ->
+  ?BF(31,25,2#0101010) bor ?BIT(24, O1) bor ?BFS(23,5,Imm19) bor ?BIT(4, O0) bor ?BF(3,0,Cond).
 
-bl({_Cond, {imm26, Offset}}) ->
-  b_imm_form(2#1, Offset).
+b({{'cond', 'al'}, {imm26, Offset}}) ->
+  b_imm_form(0, Offset);
+b({{'cond', Cond}, {imm19, Offset}}) ->
+  bcond_imm_form(0, Offset, 0, 'cond'(Cond)).
+
+bl({{'cond', 'al'}, {imm26, Offset}}) ->
+  b_imm_form(1, Offset).
 
 ret(_Opnds) ->
   b_reg_form(2#0010, 2#11111, 2#000000, 30, 2#00000).
@@ -125,6 +170,7 @@ insn_encode(Op, Opnds) ->
     'add' -> add(Opnds);
     'b'   -> b(Opnds);
     'bl'  -> bl(Opnds);
+    'cmp' -> cmp(Opnds);
     'ldr' -> ldr(Opnds);
     'mov' -> mov(Opnds);
     'ret' -> ret(Opnds);
