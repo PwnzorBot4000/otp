@@ -35,6 +35,10 @@ expand_list([], Accum) ->
 
 expand_insn(I, Accum) ->
   case I of
+    #pseudo_bc{'cond'=Cond,true_label=TrueLab,false_label=FalseLab} ->
+      [hipe_aarch64:mk_b_label(FalseLab),
+       hipe_aarch64:mk_b_label(Cond, TrueLab) |
+       Accum];
     #pseudo_tailcall_prepare{} ->
       Accum;
     #pseudo_blr{} ->
@@ -51,6 +55,10 @@ expand_insn(I, Accum) ->
     #b_fun{} ->
       [I|Accum];
     #b_label{} ->
+      [I|Accum];
+    #cmp{} ->
+      [I|Accum];
+    #comment{} ->
       [I|Accum];
     #load{} ->
       [I|Accum];
