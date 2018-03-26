@@ -208,11 +208,11 @@ translate_insn(I) ->	% -> [{Op,Opnd,OrigI}]
   case I of
     #alu{} -> do_alu(I);
     #b_fun{} -> do_b_fun(I);
-    %#b_label{} -> do_b_label(I);
+    #b_label{} -> do_b_label(I);
     #bl{} -> do_bl(I);
     %#blx{} -> do_blx(I);
-    %#cmp{} -> do_cmp(I);
-    %#comment{} -> [];
+    #cmp{} -> do_cmp(I);
+    #comment{} -> [];
     #label{} -> do_label(I);
     #load{} -> do_load(I);
     %#ldrsb{} -> do_ldrsb(I);
@@ -245,11 +245,22 @@ do_b_fun(I) ->
   [{'.reloc', {b_fun,Fun,Linkage}, #comment{term='fun'}},
    {b, {do_cond('al'),{imm26,0}}, I}].
 
+do_b_label(I) ->
+  #b_label{'cond'=Cond,label=Label} = I,
+  [{b, {do_cond(Cond),do_label_ref(Label)}, I}].
+
 do_bl(I) ->
   #bl{'fun'=Fun,sdesc=SDesc,linkage=Linkage} = I,
   [{'.reloc', {b_fun,Fun,Linkage}, #comment{term='fun'}},
    {bl, {do_cond('al'),{imm26,0}}, I},
    {'.reloc', {sdesc,SDesc}, #comment{term=sdesc}}].
+
+do_cmp(I) ->
+  #cmp{cmpop=CmpOp,src=Src,am1=Am1} = I,
+  NewCond = do_cond('al'),
+  NewSrc = do_reg(Src),
+  NewAm1 = do_am1(Am1),
+  [{CmpOp, {NewCond,NewSrc,NewAm1}, I}].
 
 do_label(I) ->
   #label{label=Label} = I,
@@ -329,6 +340,7 @@ do_label_ref(Label) when is_integer(Label) ->
 
 do_am1(Am1) ->
   case Am1 of
+    #aarch64_temp{} -> do_reg(Am1);
     {imm12,Imm12,Imm2} -> {'immediate', {imm12, Imm12}, {imm2, Imm2}};
     {imm16,Imm16,Imm2} -> {'immediate', {imm16, Imm16}, {imm2, Imm2}}
   end.
