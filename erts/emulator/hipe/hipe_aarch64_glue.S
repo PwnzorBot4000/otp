@@ -33,16 +33,19 @@
  * Retrieve the process pointer from the C argument registers.
  *
  * Our C frame includes:
- * - 12*8 == 96 bytes for saving x19-x28, fp and lr
+ * - 12*8 == 96 bytes for saving x19-x28, fp (x29) and lr (x30)
+ * - 2*8 == 16 bytes for calls to hipe_bs_put_{big_integer,small_float}.
+ *   They take 5-6 parameter dwords: 4 in registers and 1-2 on the stack.
+ *   (They take 5 regular parameters, and an additional P parameter on SMP.)
  */
 #define ENTER_FROM_C	\
-    sub sp, sp, #96; \
-    stp x19, x20, [sp, #0];  \
-    stp x21, x22, [sp, #16]; \
-    stp x23, x24, [sp, #32]; \
-    stp x25, x26, [sp, #48]; \
-    stp x27, x28, [sp, #64]; \
-    stp x29, x30, [sp, #80]; \
+    stp x29, x30, [sp, #-16]! ; \
+    stp x27, x28, [sp, #-16]! ; \
+    stp x25, x26, [sp, #-16]! ; \
+    stp x23, x24, [sp, #-16]! ; \
+    stp x21, x22, [sp, #-16]! ; \
+    stp x19, x20, [sp, #-16]! ; \
+    sub sp, sp, #16; \
 	mov	P, x0;	\
 	RESTORE_CACHED_STATE
 
@@ -62,14 +65,14 @@
 	SAVE_CACHED_STATE
 .nosave_exit:
 	/* restore callee-save registers, drop frame, return */
-    ldp x19, x20, [sp, #0]
-    ldp x21, x22, [sp, #16]
-    ldp x23, x24, [sp, #32]
-    ldp x25, x26, [sp, #48]
-    ldp x27, x28, [sp, #64]
-    ldp x29, x30, [sp, #80]
-    add sp, sp, #96
-    ret
+    add sp, sp, #16;
+    ldp x29, x17, [sp], #16  /* do not overwrite LR, use veneer temp instead */
+    ldp x27, x28, [sp], #16
+    ldp x25, x26, [sp], #16
+    ldp x23, x24, [sp], #16
+    ldp x21, x22, [sp], #16
+    ldp x19, x20, [sp], #16
+    ret x17
 
 /*
  * int hipe_aarch64_call_to_native(Process *p);
@@ -114,7 +117,7 @@ hipe_aarch64_return_to_native:
 	 * call (hipe_call_from_native_is_recursive), so a plain ret suffices.
 	 */
 	ldr	x16, [P, #P_NRA]
-    br x16
+    ret x16
 
 /*
  * int hipe_aarch64_tailcall_to_native(Process *p);
