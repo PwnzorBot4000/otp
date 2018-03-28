@@ -22,9 +22,16 @@ translate(RTL) ->
   hipe_gensym:set_var(aarch64, hipe_aarch64_registers:first_virtual()),
   hipe_gensym:set_label(aarch64, hipe_gensym:get_label(rtl)),
   Map0 = vmap_empty(),
-  Formals = [],
+  {Formals, Map1} = conv_formals(hipe_rtl:rtl_params(RTL), Map0),
   OldData = hipe_rtl:rtl_data(RTL),
-  {Code, NewData} = conv_insn_list(hipe_rtl:rtl_code(RTL), Map0, OldData),
+  {Code0, NewData} = conv_insn_list(hipe_rtl:rtl_code(RTL), Map1, OldData),
+  {RegFormals,_} = split_args(Formals),
+  Code =
+    case RegFormals of
+      [] -> Code0;
+      _ -> [hipe_aarch64:mk_label(hipe_gensym:get_next_label(aarch64)) |
+	    move_formals(RegFormals, Code0)]
+    end,
   IsClosure = hipe_rtl:rtl_is_closure(RTL),
   IsLeaf = hipe_rtl:rtl_is_leaf(RTL),
   hipe_aarch64:mk_defun(hipe_rtl:rtl_fun(RTL),
@@ -51,6 +58,7 @@ conv_insn(I, Map, Data) ->
     #call{} -> conv_call(I, Map, Data);
     #comment{} -> conv_comment(I, Map, Data);
     #enter{} -> conv_enter(I, Map, Data);
+    #goto{} -> conv_goto(I, Map, Data);
     #label{} -> conv_label(I, Map, Data);
     #load{} -> conv_load(I, Map, Data);
     #load_atom{} -> conv_load_atom(I, Map, Data);
@@ -316,6 +324,10 @@ mk_enter(Fun, Args, Linkage) ->
   [hipe_aarch64:mk_pseudo_tailcall_prepare(),
 	hipe_aarch64:mk_pseudo_tailcall(Fun, Arity, [], Linkage)].
 
+conv_goto(I, Map, Data) ->
+  I2 = [hipe_aarch64:mk_b_label(hipe_rtl:goto_label(I))],
+  {I2, Map, Data}.
+
 conv_label(I, Map, Data) ->
   I2 = [hipe_aarch64:mk_label(hipe_rtl:label_name(I))],
   {I2, Map, Data}.
@@ -536,6 +548,14 @@ move_actuals([{Src,Dst}|Actuals], Rest) ->
 move_actuals([], Rest) ->
   Rest.
 
+%%% Convert a list of formal parameters passed in
+%%% registers (from split_args/1) to a list of moves.
+
+move_formals([{Dst,Src}|Formals], Rest) ->
+  move_formals(Formals, [hipe_aarch64:mk_pseudo_move(Dst, Src) | Rest]);
+move_formals([], Rest) ->
+  Rest.
+
 %%% Convert a 'fun' operand (MFA, prim, or temp)
 
 conv_fun(Fun, Map) ->
@@ -616,6 +636,24 @@ conv_dst_list([O|Os], Map) ->
   {[Dst|Dsts], Map2};
 conv_dst_list([], Map) ->
   {[], Map}.
+
+conv_formals(Os, Map) ->
+  conv_formals(hipe_aarch64_registers:nr_args(), Os, Map, []).
+
+conv_formals(N, [O|Os], Map, Res) ->
+  Type =
+    case hipe_rtl:is_var(O) of
+      true -> 'tagged';
+      _ -> 'untagged'
+    end,
+  Dst =
+    if N > 0 -> hipe_aarch64:mk_new_temp(Type);	% allocatable
+       true -> hipe_aarch64:mk_new_nonallocatable_temp(Type)
+    end,
+  Map1 = vmap_bind(Map, O, Dst),
+  conv_formals(N-1, Os, Map1, [Dst|Res]);
+conv_formals(_, [], Map, Res) ->
+  {lists:reverse(Res), Map}.
 
 %%% Create a temp representing the stack pointer register.
 

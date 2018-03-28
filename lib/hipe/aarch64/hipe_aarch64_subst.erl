@@ -44,6 +44,7 @@ insn_temps(T, I) ->
       #move       {dst=D,am1=S} -> I#move        {dst=T(D),am1=AM1(S)};
       #pseudo_move{dst=D,src=S} -> I#pseudo_move {dst=T(D),src=T(S)};
       #store      {src=S,am2=D} -> I#store       {src=T(S),am2=AM2(D)};
+      #b_label{} -> I;
       #comment{} -> I;
       #label{} -> I;
       #pseudo_bc{} -> I;

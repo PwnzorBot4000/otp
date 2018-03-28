@@ -177,6 +177,8 @@ fcalls() ->	% {GetFCallsInsn, FCallsReg, PutFCallsInsn}
       fcalls_from_pcb();
     arm ->
       fcalls_from_pcb();
+    aarch64 ->
+      fcalls_from_pcb();
     x86 ->
       fcalls_from_reg(hipe_x86_registers:fcalls());
     amd64 ->

@@ -39,10 +39,8 @@ expand_insn(I, Accum) ->
       [hipe_aarch64:mk_b_label(FalseLab),
        hipe_aarch64:mk_b_label(Cond, TrueLab) |
        Accum];
-    #pseudo_tailcall_prepare{} ->
-      Accum;
-    #pseudo_blr{} ->
-      [I|Accum];
+    % pseudo_blr and pseudo_bx are passed directly to assemble,
+    % where they will be translated to ret and br instructions.
     #pseudo_call{funv=FunV,sdesc=SDesc,contlab=ContLab,linkage=Linkage} ->
       [hipe_aarch64:mk_b_label(ContLab),
        case FunV of
@@ -50,30 +48,12 @@ expand_insn(I, Accum) ->
 	 _ -> hipe_aarch64:mk_bl(FunV, SDesc, Linkage)
        end |
        Accum];
-    #pseudo_li{} ->
-      [I|Accum];
-    #b_fun{} ->
-      [I|Accum];
-    #b_label{} ->
-      [I|Accum];
-    #cmp{} ->
-      [I|Accum];
-    #comment{} ->
-      [I|Accum];
-    #load{} ->
-      [I|Accum];
-    #store{} ->
-      [I|Accum];
-    #move{} ->
-      [I|Accum];
-    #alu{} ->
-      [I|Accum];
-    #label{} ->
+    #pseudo_switch{} ->
+      throw(unimplemented);
+    #pseudo_tailcall_prepare{} ->
+      Accum;
+    _ ->
       [I|Accum]
-    % pseudo_blr is passed directly to assemble, where it will be translated
-    % to a ret instruction.
-    %_ ->   % temporarily adding all default cases explicitly.
-    %  [I|Accum]
   end.
 
 %% We do peephole "bottom-up" (in reverse, but applying rules to the correctly

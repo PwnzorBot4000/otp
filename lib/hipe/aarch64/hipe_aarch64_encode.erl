@@ -65,7 +65,9 @@ bfs(LeftBit, RightBit, Value) ->
     'eq' -> 2#0000;	% equal
     'ne' -> 2#0001;	% not equal
     'cs' -> 2#0010;	% carry set
+    'hs' -> 2#0010;	% unsigned higher or same
     'cc' -> 2#0011;	% carry clear
+    'lo' -> 2#0011;	% unsigned lower
     'mi' -> 2#0100;	% minus / negative
     'pl' -> 2#0101;	% plus/positive or zero
     'vs' -> 2#0110;	% overflow
@@ -111,10 +113,15 @@ cmp({{'cond', 'al'}, Opnd, AmOpnd}) ->
 data_mov_form(Sf, Opc, Hw, Imm16, Rd) ->
   ?BIT(31,Sf) bor ?BF(30,29,Opc) bor ?BF(28,23,2#100101) bor ?BF(22,21,Hw) bor ?BF(20,5,Imm16) bor ?BF(4,0,Rd).
 
+data_reg_shift_logical_form(Sf, Opc, Shift, N, Rm, Imm6, Rn, Rd) ->
+  ?BIT(31,Sf) bor ?BF(30,29,Opc) bor ?BF(28,24,2#01010) bor ?BF(23,22,Shift) bor ?BIT(21,N) bor ?BF(20,16,Rm) bor ?BF(15,10,Imm6) bor ?BF(9,5,Rn) bor ?BF(4,0,Rd).
+
 mov({{'cond', 'al'}, {s,0}, {r, Dst}, Src}) ->
   case Src of
     {'immediate', {imm16, Imm16}, {imm2, Imm2}} ->
-      data_mov_form(2#1, 2#10, Imm2, Imm16, Dst)
+      data_mov_form(1, 2#10, Imm2, Imm16, Dst);
+    {r, Register} ->
+      data_reg_shift_logical_form(1, 2#01, 2#00, 0, Register, 2#000000, 2#11111, Dst)
   end.
 
 %%% Loads / Stores

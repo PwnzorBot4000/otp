@@ -51,19 +51,11 @@ is_branch(I) ->
     #b_label{'cond'='al'} -> true;
     #pseudo_bc{} -> true;
     #pseudo_blr{} -> true;
+    #pseudo_bx{} -> true;
     #pseudo_call{} -> true;
+    #pseudo_switch{} -> true;
     #pseudo_tailcall{} -> true;
-    #pseudo_tailcall_prepare{} -> false;
-    #load{} -> false;
-    #store{} -> false;
-    #alu{} -> false;
-    #cmp{} -> false;
-    #comment{} -> false;
-    #move{} -> false;
-    #pseudo_move{} -> false;
-    #pseudo_spill_move{} -> false;
-    #pseudo_li{} -> false % to be removed: temporarily handling all false cases here 
-    %_ -> false           % to prevent unhandled cases return false without warning.
+    _ -> false
   end.
 
 branch_successors(Branch) ->
@@ -86,11 +78,21 @@ branch_preds(Branch) ->
       [{FalseLab, 1.0-Pred}, {TrueLab, Pred}];
     #pseudo_call{contlab=ContLab, sdesc=#aarch64_sdesc{exnlab=[]}} ->
       %% A function can still cause an exception, even if we won't catch it
-      [{ContLab, 1.0-hipe_bb_weights:call_exn_pred()}]
+      [{ContLab, 1.0-hipe_bb_weights:call_exn_pred()}];
+    #pseudo_call{contlab=ContLab, sdesc=#aarch64_sdesc{exnlab=ExnLab}} ->
+      CallExnPred = hipe_bb_weights:call_exn_pred(),
+      [{ContLab, 1.0-CallExnPred}, {ExnLab, CallExnPred}];
+    #pseudo_switch{labels=_Labels} ->
+      throw(unimplemented);
+    _ ->
+      case branch_successors(Branch) of
+	[] -> [];
+	[Single] -> [{Single, 1.0}]
+      end
   end.
 
-mk_goto(_) ->
-  exit("mk_goto").
+mk_goto(Label) ->
+  hipe_aarch64:mk_b_label(Label).
 
 is_label(I) ->
   hipe_aarch64:is_label(I).
