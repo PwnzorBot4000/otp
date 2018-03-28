@@ -114,7 +114,7 @@ data_mov_form(Sf, Opc, Hw, Imm16, Rd) ->
 mov({{'cond', 'al'}, {s,0}, {r, Dst}, Src}) ->
   case Src of
     {'immediate', {imm16, Imm16}, {imm2, Imm2}} ->
-      data_mov_form(2#1, 2#00, Imm2, Imm16, Dst)
+      data_mov_form(2#1, 2#10, Imm2, Imm16, Dst)
   end.
 
 %%% Loads / Stores
