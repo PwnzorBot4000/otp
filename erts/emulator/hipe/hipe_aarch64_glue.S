@@ -475,8 +475,7 @@ hipe_aarch64_inc_stack:
 	ldr	NSP, [P, #P_NSP]
 	LOAD_ARG_REGS
 	# this relies on LOAD_ARG_REGS not clobbering TEMP_ARG0
-	mov	x16, TEMP_ARG0
-    br x16
+	ret TEMP_ARG0
 
 #if defined(__linux__) && defined(__ELF__)
 .section .note.GNU-stack,"",%progbits
