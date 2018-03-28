@@ -459,12 +459,12 @@ nbif_stack_trap_ra:		/* a return address, not a function */
 	br x30			/* resume at original RA */
 
 /*
- * hipe_arm_inc_stack
+ * hipe_aarch64_inc_stack
  * Caller saved its LR in TEMP_LR (== TEMP1) before calling us.
  */
-	.global	hipe_arm_inc_stack
-	.type	hipe_arm_inc_stack, %function
-hipe_arm_inc_stack:
+	.global	hipe_aarch64_inc_stack
+	.type	hipe_aarch64_inc_stack, %function
+hipe_aarch64_inc_stack:
 	STORE_ARG_REGS
 	mov	TEMP_ARG0, x30
 	str	NSP, [P, #P_NSP]

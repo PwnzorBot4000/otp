@@ -132,7 +132,7 @@ ifelse(eval(NR_ARG_REGS >= 6),0,,
  *	Must be otherwise unused in the return path.
  *
  * TEMP_ARG0:
- *	Used in hipe_arm_inc_stack to preserve the return address
+ *	Used in hipe_aarch64_inc_stack to preserve the return address
  *	(TEMP_LR contains the caller's saved return address).
  *	Must be a C callee-save register.
  *	Must be otherwise unused in the call path.
@@ -141,7 +141,7 @@ ifelse(eval(NR_ARG_REGS >= 6),0,,
 
 dnl XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 dnl X								X
-dnl X			hipe_arm_glue.S support			X
+dnl X			hipe_aarch64_glue.S support		X
 dnl X								X
 dnl XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
@@ -163,7 +163,7 @@ define(STORE_ARG_REGS,`SAR_N(eval(NR_ARG_REGS-1))')dnl
 
 dnl XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 dnl X								X
-dnl X			hipe_arm_bifs.m4 support		X
+dnl X			hipe_aarch64_bifs.m4 support		X
 dnl X								X
 dnl XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 

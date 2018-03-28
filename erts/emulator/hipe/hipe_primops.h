@@ -101,5 +101,8 @@ PRIMOP_LIST(am_build_stacktrace, &nbif_hipe_bifs_build_stacktrace)
 #if defined(__arm__)
 #include "hipe_arm_primops.h"
 #endif
+#if defined(__aarch64__)
+#include "hipe_aarch64_primops.h"
+#endif
 
 #endif /* HIPE_PRIMOPS_H */

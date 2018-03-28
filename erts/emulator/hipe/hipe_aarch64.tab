@@ -21,4 +21,4 @@
 # AARCH64-specific atoms and bifs
 
 atom aarch64
-# atom inc_stack_0
+atom inc_stack_0

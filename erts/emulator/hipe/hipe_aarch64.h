@@ -26,6 +26,6 @@ static __inline__ int hipe_word64_address_ok(void *address)
 
 #define hipe_arch_name	am_aarch64
 
-// extern void hipe_arm_inc_stack(void);
+extern void hipe_aarch64_inc_stack(void);
 
 #endif /* HIPE_AARCH_H */
