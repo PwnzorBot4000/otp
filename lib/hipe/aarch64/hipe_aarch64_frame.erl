@@ -19,13 +19,15 @@
 -include("../rtl/hipe_literals.hrl").
 
 -define(LIVENESS_ALL, hipe_aarch64_liveness_gpr). % since we have no FP yet
+-define(STK_ALIGN, 16). % AARCH64 stack is 16 - byte aligned
 
 frame(CFG) ->
   Formals = fix_formals(hipe_aarch64_cfg:params(CFG)),
   Temps0 = all_temps(CFG, Formals),
   MinFrame = defun_minframe(CFG),
-  Temps = ensure_minframe(MinFrame, Temps0),
+  Temps1 = ensure_minframe(MinFrame, Temps0),
   ClobbersLR = clobbers_lr(CFG),
+  Temps = ensure_alignment(Temps1, ClobbersLR),
   Liveness = ?LIVENESS_ALL:analyse(CFG),
   do_body(CFG, Liveness, Formals, Temps, ClobbersLR).
 
@@ -163,7 +165,9 @@ restore_lr(FPoff, Context, Rest) ->
 adjust_sp(N, Rest) ->
   if N =:= 0 ->
       Rest;
-     true ->
+    true ->
+      % Assertion to ensure stack alignment
+      true = N rem (?STK_ALIGN div word_size()) == 0,
       SP = mk_sp(),
       hipe_aarch64:mk_addi(SP, SP, N, Rest)
   end.
@@ -552,6 +556,28 @@ if MinFrame > Frame ->
     ensure_minframe(MinFrame, Frame+1, tset_insert(Temps, Temp));
    true -> Temps
 end.
+
+%%%
+%%% Ensure that the stack pointer will be aligned,
+%%% if necessary by prepending unused dummy temps.
+%%%
+
+ensure_alignment(Temps, ClobbersLR) ->
+  SizeNoLR = tset_size(Temps),
+  LRStoreSize = case ClobbersLR of
+    false -> 0;
+    true -> 1
+  end,
+  FrameSize = SizeNoLR + LRStoreSize,
+  FrameBytes = FrameSize * word_size(),
+  UnalignedBytes = FrameBytes rem ?STK_ALIGN,
+  if UnalignedBytes > 0 ->
+      % assertion for impossible alignment:
+      true = (?STK_ALIGN - UnalignedBytes) >= word_size(),
+      Temp = hipe_aarch64:mk_new_temp('untagged'),
+      ensure_alignment(tset_insert(Temps, Temp), ClobbersLR);
+    true -> Temps
+  end.
 
 word_size() ->
   8.
