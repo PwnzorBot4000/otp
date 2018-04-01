@@ -160,8 +160,8 @@ int hipe_patch_insn(void *address, Uint64 value, Eterm type)
 */
 void *hipe_make_native_stub(void *callee_exp, unsigned int beamArity)
 {
-    unsigned int *code;
-    long long callemu_offset;
+    Uint32 *code;
+    Sint64 callemu_offset;
     int is_short_jmp;
 
     /*
@@ -189,7 +189,7 @@ void *hipe_make_native_stub(void *callee_exp, unsigned int beamArity)
     code = erts_alloc(ERTS_ALC_T_HIPE_EXEC, 8*sizeof(Uint32));
     if (!code)
 	return NULL;
-    callemu_offset = ((long long)&nbif_callemu - (long long)&code[2]) >> 2;
+    callemu_offset = (Sint64)((Uint64)(&nbif_callemu) >> 2) - (Sint64)((Uint64)(&code[2]) >> 2);
     is_short_jmp = (callemu_offset >= -0x02000000 &&
                     callemu_offset <= 0x01FFFFFF);
 #ifdef DEBUG
@@ -199,23 +199,25 @@ void *hipe_make_native_stub(void *callee_exp, unsigned int beamArity)
 #endif
 
     /* mov x0, #beamArity */
-    code[0] = 0xD280000 | ((beamArity & 0xFF) << 5);
+    code[0] = 0xD2800000 | ((beamArity & 0xFF) << 5);
     /* ldr x8, .+12 // callee_exp */
-    code[1] = 0x58000068;
+    code[1] = 0x58000000 | (3 << 5) | 8;
     if (is_short_jmp) {
         /* b nbif_callemu */
-        code[2] = 0x14000000 | (int)(callemu_offset & 0x03FFFFFF);
+        code[2] = 0x14000000 | (callemu_offset & 0x03FFFFFF);
     }
     else {
         /* ldr x16, .+16 // nbif_callemu */
-        code[2] = 0x58000090;
+        code[2] = 0x58000000 | (4 << 5) | 16;
         /* br x16 */
         code[3] = 0xD61F0200;
-        /* .quad nbif_callemu */
-        *((Uint64*)&(code[6])) = (unsigned long long)&nbif_callemu;
     }
     /* .quad callee_exp */
-    *((Uint64*)&(code[4])) = (unsigned long long)callee_exp;
+    *((Uint64*)&(code[4])) = (Uint64) callee_exp;
+    if (!is_short_jmp) {
+        /* .quad nbif_callemu */
+        *((Uint64*)&(code[6])) = (Uint64) &nbif_callemu;
+    }
 
     hipe_flush_icache_range(code, 8*sizeof(Uint32));
 
