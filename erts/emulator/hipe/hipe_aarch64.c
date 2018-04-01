@@ -230,14 +230,14 @@ void hipe_free_native_stub(void* stub)
 static void patch_b(Uint32 *address, Sint64 offset, Uint32 AA)
 {
     Uint32 oldI = *address;
-    Uint32 newI = (oldI & 0x14000000) | (Uint32)(offset & 0x03FFFFFF);
+    Uint32 newI = (oldI & 0xFC000000) | (Uint32)(offset & 0x03FFFFFF);
     *address = newI;
     hipe_flush_icache_word(address);
 }
 
 int hipe_patch_call(void *callAddress, void *destAddress, void *trampoline)
 {
-    Sint64 destOffset = ((Sint64)destAddress - (Sint64)callAddress) >> 2;
+    Sint64 destOffset = (Sint64)((Uint64)destAddress >> 2) - (Sint64)((Uint64)callAddress >> 2);
     if (destOffset >= -0x02000000 && destOffset <= 0x01FFFFFF) {
 	/* The destination is within a [-128MB,+128MB] range from us.
 	   We can reach it with a b/bl instruction.
@@ -246,7 +246,7 @@ int hipe_patch_call(void *callAddress, void *destAddress, void *trampoline)
     } else {
 	/* The destination is too distant for b/bl.
 	   Must do a b/bl to the trampoline. */
-	Sint64 trampOffset = ((Sint64)trampoline - (Sint64)callAddress) >> 2;
+	Sint64 trampOffset = (Sint64)((Uint64)trampoline >> 2) - (Sint64)((Uint64)callAddress >> 2);
 	if (trampOffset >= -0x02000000 && trampOffset <= 0x01FFFFFF) {
 	    /* Update the trampoline's address computation.
 	       (May be redundant, but we can't tell.) */
