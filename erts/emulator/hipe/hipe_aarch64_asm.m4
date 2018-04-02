@@ -177,7 +177,7 @@ dnl
 define(NBIF_MOVE_REG,`ifelse($1,$2,`# mov	$1, $2',`mov	$1, $2')')dnl
 define(NBIF_REG_ARG,`NBIF_MOVE_REG($1,ARG$2)')dnl
 define(NBIF_STK_LOAD,`ldr	$1, [NSP, #$2]')dnl
-define(NBIF_STK_ARG,`NBIF_STK_LOAD($1,eval(4*(($2-$3)-1)))')dnl
+define(NBIF_STK_ARG,`NBIF_STK_LOAD($1,eval(8*(($2-$3)-1)))')dnl
 define(NBIF_ARG,`ifelse(eval($3 >= NR_ARG_REGS),0,`NBIF_REG_ARG($1,$3)',`NBIF_STK_ARG($1,$2,$3)')')dnl
 
 `/* #define NBIF_ARG_1_0	'NBIF_ARG(x1,1,0)` */'
@@ -204,9 +204,9 @@ dnl May only be used in BIF/primop wrappers where SAVE_CONTEXT
 dnl has saved LR in TEMP_LR.
 dnl
 define(NSP_RETN,`add	NSP, NSP, #$1
-	br TEMP_LR')dnl
-define(NSP_RET0,`br TEMP_LR')dnl
-define(RET_POP,`ifelse(eval($1 > NR_ARG_REGS),0,0,eval(4*($1 - NR_ARG_REGS)))')dnl
+	ret TEMP_LR')dnl
+define(NSP_RET0,`ret TEMP_LR')dnl
+define(RET_POP,`ifelse(eval($1 > NR_ARG_REGS),0,0,eval(8*($1 - NR_ARG_REGS)))')dnl
 define(NBIF_RET_N,`ifelse(eval($1),0,`NSP_RET0',`NSP_RETN($1)')')dnl
 define(NBIF_RET,`NBIF_RET_N(eval(RET_POP($1)))')dnl
 

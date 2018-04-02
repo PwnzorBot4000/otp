@@ -67,7 +67,7 @@ static __inline__ void hipe_init_process(struct hipe_process_state *p)
     p->nstgraylim = NULL;
     p->nstblacklim = NULL;
     p->ngra = NULL;
-#if defined(__sparc__) || defined(__powerpc__) || defined(__ppc__) || defined(__powerpc64__) || defined(__arm__)
+#if defined(__sparc__) || defined(__powerpc__) || defined(__ppc__) || defined(__powerpc64__) || defined(__arm__) || defined(__aarch64__)
     p->nra = NULL;
 #endif
     p->narity = 0;

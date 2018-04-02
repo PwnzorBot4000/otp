@@ -12,13 +12,13 @@ extern void hipe_flush_icache_range(void *address, unsigned int nbytes);
 /* for hipe_bifs_{read,write}_{s,u}32 -- XXX: most likely, NOT needed */
 static __inline__ int hipe_word32_address_ok(void *address)
 {
-    return ((unsigned long)address & 0x3) == 0;
+    return ((unsigned long long)address & 0x3) == 0;
 }
 
 /* for hipe_bifs_{read,write}_{s,u}64 */
 static __inline__ int hipe_word64_address_ok(void *address)
 {
-    return 1;
+    return ((unsigned long long)address & 0x7) == 0;
 }
 
 /* Native stack growth direction. */

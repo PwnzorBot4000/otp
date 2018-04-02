@@ -367,6 +367,13 @@ static const struct literal {
     /* AARCH64 */
     { "AARCH64_LEAF_WORDS", AARCH64_LEAF_WORDS },
     { "AARCH64_NR_ARG_REGS", AARCH64_NR_ARG_REGS },
+    { "AARCH64_IS_BIG_ENDIAN",
+#if defined(__aarch64__) && defined(__ARM64EB__)
+      1
+#else
+      0
+#endif
+    },
 
     /* ARM */
     { "ARM_LEAF_WORDS", ARM_LEAF_WORDS },

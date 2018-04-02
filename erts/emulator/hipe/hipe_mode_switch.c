@@ -153,6 +153,8 @@ void hipe_check_pcb(Process *p, const char *file, unsigned line)
 #include "hipe_ppc_glue.h"
 #elif defined(__arm__)
 #include "hipe_arm_glue.h"
+#elif defined(__aarch64__)
+#include "hipe_aarch64_glue.h"
 #endif
 
 Uint hipe_beam_pc_return[1];	/* needed in hipe_debug.c */
