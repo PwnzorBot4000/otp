@@ -321,8 +321,10 @@ conv_enter(I, Map, Data) ->
 
 mk_enter(Fun, Args, Linkage) ->
   Arity = length(Args),
-  [hipe_aarch64:mk_pseudo_tailcall_prepare(),
-	hipe_aarch64:mk_pseudo_tailcall(Fun, Arity, [], Linkage)].
+  {RegArgs,StkArgs} = split_args(Args),
+  move_actuals(RegArgs,
+	       [hipe_aarch64:mk_pseudo_tailcall_prepare(),
+		hipe_aarch64:mk_pseudo_tailcall(Fun, Arity, StkArgs, Linkage)]).
 
 conv_goto(I, Map, Data) ->
   I2 = [hipe_aarch64:mk_b_label(hipe_rtl:goto_label(I))],
