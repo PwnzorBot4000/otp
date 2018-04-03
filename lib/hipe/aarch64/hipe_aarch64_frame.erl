@@ -252,11 +252,99 @@ do_pseudo_tailcall(I, Context) -> % always at FPoff=context_framesize(Context)
   restore_lr(context_framesize(Context), Context,
 	     Insns ++ adjust_sp(FPoff2, [I2])).
 
-% TODO: Implement for when num arguments > 0
-do_tailcall_args(Args, Context) when length(Args) == 0 ->
-  {[], context_framesize(Context)};
-do_tailcall_args(_, _) ->
-  throw("Unimplemented").
+do_tailcall_args(Args, Context) ->
+  FPoff0 = context_framesize(Context),
+  Arity = context_arity(Context),
+  FrameTop = word_size()*Arity,
+  DangerOff = FrameTop - word_size()*length(Args),
+  %%
+  Moves = mk_moves(Args, FrameTop, []),
+  %%
+  {Stores, Simple, Conflict} =
+    split_moves(Moves, Context, DangerOff, [], [], []),
+  %% sanity check (shouldn't trigger any more)
+  if DangerOff < -FPoff0 ->
+      exit({?MODULE,do_tailcall_args,DangerOff,-FPoff0});
+     true -> []
+  end,
+  FPoff1 = FPoff0,
+  %%
+  {Pushes, Pops, FPoff2} = split_conflict(Conflict, FPoff1, [], []),
+  %%
+  TempReg = hipe_aarch64_registers:temp1(),
+  %%
+  {adjust_sp(-(FPoff2 - FPoff1),
+	     simple_moves(Pushes, FPoff2, TempReg,
+			  store_moves(Stores, FPoff2, TempReg,
+				      simple_moves(Simple, FPoff2, TempReg,
+						   simple_moves(Pops, FPoff2, TempReg,
+								[]))))),
+   FPoff2}.
+mk_moves([Arg|Args], Off, Moves) ->
+  Off1 = Off - word_size(),
+  mk_moves(Args, Off1, [{Arg,Off1}|Moves]);
+mk_moves([], _, Moves) ->
+  Moves.
+
+split_moves([Move|Moves], Context, DangerOff, Stores, Simple, Conflict) ->
+  {Src,DstOff} = Move,
+  case src_is_pseudo(Src) of
+    false ->
+      split_moves(Moves, Context, DangerOff, [Move|Stores],
+		  Simple, Conflict);
+    true ->
+      SrcOff = context_offset(Context, Src),
+      Type = typeof_temp(Src),
+      if SrcOff =:= DstOff ->
+	  split_moves(Moves, Context, DangerOff, Stores,
+		      Simple, Conflict);
+	 SrcOff >= DangerOff ->
+	  split_moves(Moves, Context, DangerOff, Stores,
+		      Simple, [{SrcOff,DstOff,Type}|Conflict]);
+	 true ->
+	  split_moves(Moves, Context, DangerOff, Stores,
+		      [{SrcOff,DstOff,Type}|Simple], Conflict)
+      end
+  end;
+split_moves([], _, _, Stores, Simple, Conflict) ->
+  {Stores, Simple, Conflict}.
+
+split_conflict([{SrcOff,DstOff,Type}|Conflict], FPoff, Pushes, Pops) ->
+  FPoff1 = FPoff + word_size(),
+  Push = {SrcOff,-FPoff1,Type},
+  Pop = {-FPoff1,DstOff,Type},
+  split_conflict(Conflict, FPoff1, [Push|Pushes], [Pop|Pops]);
+split_conflict([], FPoff, Pushes, Pops) ->
+  {lists:reverse(Pushes), Pops, FPoff}.
+
+simple_moves([{SrcOff,DstOff,Type}|Moves], FPoff, TempReg, Rest) ->
+  Temp = hipe_aarch64:mk_temp(TempReg, Type),
+  SP = mk_sp(),
+  LoadOff = FPoff+SrcOff,
+  StoreOff = FPoff+DstOff,
+  simple_moves(Moves, FPoff, TempReg,
+	       mk_load('ldr', Temp, LoadOff, SP,
+		       mk_store('str', Temp, StoreOff, SP,
+				Rest)));
+simple_moves([], _, _, Rest) ->
+  Rest.
+
+store_moves([{Src,DstOff}|Moves], FPoff, TempReg, Rest) ->
+  %%Type = typeof_temp(Src),
+  SP = mk_sp(),
+  StoreOff = FPoff+DstOff,
+  {NewSrc,FixSrc} =
+    case hipe_aarch64:is_temp(Src) of
+      true ->
+	{Src, []};
+      _ ->
+	Temp = hipe_aarch64:mk_temp(TempReg, 'untagged'),
+	{Temp, hipe_aarch64:mk_li(Temp, Src)}
+    end,
+  store_moves(Moves, FPoff, TempReg,
+	      FixSrc ++ mk_store('str', NewSrc, StoreOff, SP, Rest));
+store_moves([], _, _, Rest) ->
+  Rest.
 
 %%%
 %%% Contexts
@@ -438,6 +526,11 @@ mk_load(LdOp, Dst, Offset, Base, Rest) ->
 mk_store(StOp, Src, Offset, Base, Rest) ->
   hipe_aarch64:mk_store(StOp, Src, Base, Offset, 'temp2', Rest).
 
+%%% typeof_temp -- what's temp's type?
+
+typeof_temp(Temp) ->
+  hipe_aarch64:temp_type(Temp).
+
 %%% Cons up an 'SP' Temp.
 
 mk_sp() ->
@@ -454,6 +547,11 @@ mk_temp2() ->
   hipe_aarch64:mk_temp(hipe_aarch64_registers:temp2(), 'untagged').
 
 %%% Check if an operand is a pseudo-Temp.
+
+%%% Check if an operand is a pseudo-Temp.
+
+src_is_pseudo(Src) ->
+  hipe_aarch64:is_temp(Src) andalso temp_is_pseudo(Src).
 
 temp_is_pseudo(Temp) ->
   not(hipe_aarch64:temp_is_precoloured(Temp)).
