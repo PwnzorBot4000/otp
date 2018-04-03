@@ -58,6 +58,8 @@
 	 pseudo_call_sdesc/1,
 	 pseudo_call_linkage/1,
 
+     mk_move/2,
+
 	 mk_pseudo_bc/4,
 
 	 mk_pseudo_li/2,
