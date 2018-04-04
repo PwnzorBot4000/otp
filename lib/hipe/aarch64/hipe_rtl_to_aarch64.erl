@@ -77,14 +77,26 @@ conv_alu(I, Map, Data) ->
   I2 = mk_alu(S, Dst, Src1, RtlAluOp, Src2),
   {I2, Map2, Data}.
 
-conv_arith(RtlAluOp) -> % RtlAluOp \ RtlShiftOp -> ArmArithOp
+conv_aluop(RtlAluOp) -> % RtlAluOp \ RtlShiftOp -> ArmAluOp
   case RtlAluOp of
     'add' -> 'add';
     'sub' -> 'sub';
     'mul' -> 'mul';
     'or'  -> 'orr';
     'and' -> 'and';
-    'xor' -> 'eor'
+    'xor' -> 'eor';
+    'sll' -> 'lsl';
+    'srl' -> 'lsr';
+    'sra' -> 'asr'
+  end.
+
+is_aluop_transitive(AluOp) ->
+  case AluOp of
+    'sub' -> false;
+    'lsl' -> false;
+    'lsr' -> false;
+    'asr' -> false;
+    _ -> true
   end.
 
 conv_cmpop('add') -> 'cmn';
@@ -94,52 +106,54 @@ conv_cmpop('xor') -> 'teq';
 conv_cmpop(_) -> none.
 
 mk_alu(S, Dst, Src1, RtlAluOp, Src2) ->
-  case hipe_rtl:is_shift_op(RtlAluOp) of
-    true ->
-      throw("unimplemented");
-    false ->
-      mk_arith(S, Dst, Src1, conv_arith(RtlAluOp), Src2)
-  end.
-
-mk_arith(S, Dst, Src1, ArithOp, Src2) ->
+  AluOp = conv_aluop(RtlAluOp),
   case hipe_aarch64:is_temp(Src1) of
     true ->
       case hipe_aarch64:is_temp(Src2) of
 	true ->
-	  mk_arith_rr(S, Dst, Src1, ArithOp, Src2);
+	  mk_alu_rr(S, Dst, Src1, AluOp, Src2);
 	_ ->
-	  mk_arith_ri(S, Dst, Src1, ArithOp, Src2)
+	  mk_alu_ri(S, Dst, Src1, AluOp, Src2)
       end;
     _ ->
       case hipe_aarch64:is_temp(Src2) of
 	true ->
-	  mk_arith_ir(S, Dst, Src1, ArithOp, Src2);
+	  mk_alu_ir(S, Dst, Src1, AluOp, Src2);
 	_ ->
-	  mk_arith_ii(S, Dst, Src1, ArithOp, Src2)
+	  mk_alu_ii(S, Dst, Src1, AluOp, Src2)
       end
   end.
 
-mk_arith_ii(_S, _Dst, _Src1, _ArithOp, _Src2) ->
-  throw("unimplemented").
+mk_alu_ii(S, Dst, Src1, AluOp, Src2) ->
+  Tmp = new_untagged_temp(),
+  mk_li(Tmp, Src1,
+	mk_alu_ri(S, Dst, Tmp, AluOp, Src2)).
 
-mk_arith_ir(_S, _Dst, _Src1, _ArithOp, _Src2) ->
-  throw("unimplemented").
+mk_alu_ir(S, Dst, Src1, AluOp, Src2) ->
+  case is_aluop_transitive(AluOp) of
+    true ->
+      mk_alu_ri(S, Dst, Src2, AluOp, Src1);
+    false ->
+      Tmp = new_untagged_temp(),
+      mk_li(Tmp, Src1,
+    	mk_alu_rr(S, Dst, Tmp, AluOp, Src2))
+  end.
 
-mk_arith_ri(S, Dst, Src1, ArithOp, Src2) ->
-  case ArithOp of
+mk_alu_ri(S, Dst, Src1, AluOp, Src2) ->
+  case AluOp of
     'mul' -> % mul/smull only take reg/reg operands
       throw("unimplemented");
     _ -> % add/sub/orr/and/eor have reg/am1 operands
-      {FixAm1,NewArithOp,Am1} = fix_aluop_imm(ArithOp, Src2),
-      FixAm1 ++ [hipe_aarch64:mk_alu(NewArithOp, S, Dst, Src1, Am1)]
+      {FixAm1,NewAluOp,Am1} = fix_aluop_imm(AluOp, Src2),
+      FixAm1 ++ [hipe_aarch64:mk_alu(NewAluOp, S, Dst, Src1, Am1)]
   end.
 
-mk_arith_rr(S, Dst, Src1, ArithOp, Src2) ->
-  case {ArithOp,S} of
+mk_alu_rr(S, Dst, Src1, AluOp, Src2) ->
+  case {AluOp,S} of
     {'mul',true} ->
       throw("unimplemented");
     _ ->
-      [hipe_aarch64:mk_alu(ArithOp, S, Dst, Src1, Src2)]
+      [hipe_aarch64:mk_alu(AluOp, S, Dst, Src1, Src2)]
   end.
 
 fix_aluop_imm(AluOp, Imm) -> % {FixAm1,NewAluOp,Am1}
