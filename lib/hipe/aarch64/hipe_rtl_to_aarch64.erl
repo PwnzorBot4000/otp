@@ -61,7 +61,9 @@ conv_insn(I, Map, Data) ->
     #goto{} -> conv_goto(I, Map, Data);
     #label{} -> conv_label(I, Map, Data);
     #load{} -> conv_load(I, Map, Data);
+    #load_address{} -> conv_load_address(I, Map, Data);
     #load_atom{} -> conv_load_atom(I, Map, Data);
+    #move{} -> conv_move(I, Map, Data);
     #return{} -> conv_return(I, Map, Data);
     #store{} -> conv_store(I, Map, Data);
     _ -> exit({?MODULE,conv_insn,I})
@@ -419,11 +421,25 @@ mk_ldrsb_ri(_Dst, _Base, Offset) when is_integer(Offset) ->
 mk_ldrsb_rr(_Dst, _Base1, _Base2) ->
   throw("unimplemented").
 
+conv_load_address(I, Map, Data) ->
+  {Dst, Map0} = conv_dst(hipe_rtl:load_address_dst(I), Map),
+  Addr = hipe_rtl:load_address_addr(I),
+  Type = hipe_rtl:load_address_type(I),
+  Src = {Addr,Type},
+  I2 = [hipe_aarch64:mk_pseudo_li(Dst, Src)],
+  {I2, Map0, Data}.
+
 conv_load_atom(I, Map, Data) ->
   {Dst, Map0} = conv_dst(hipe_rtl:load_atom_dst(I), Map),
   Src = hipe_rtl:load_atom_atom(I),
   I2 = [hipe_aarch64:mk_pseudo_li(Dst, Src)],
   {I2, Map0, Data}.
+
+conv_move(I, Map, Data) ->
+  {Dst, Map0} = conv_dst(hipe_rtl:move_dst(I), Map),
+  {Src, Map1} = conv_src(hipe_rtl:move_src(I), Map0),
+  I2 = mk_move(Dst, Src, []),
+  {I2, Map1, Data}.
 
 mk_move(Dst, Src, Tail) ->
   case hipe_aarch64:is_temp(Src) of
