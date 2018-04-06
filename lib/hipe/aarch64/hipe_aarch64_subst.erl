@@ -20,9 +20,11 @@
 -type temp()    :: #aarch64_temp{}.
 -type imm2()    :: 0..3.
 -type imm12()   :: 0..4095.
+-type imm13()   :: 0..8191.
 -type imm16()   :: 0..65535.
 -type am1()     :: {imm12,imm12(),imm2()}
-        | {imm16,imm16(),imm2()}.
+        | {imm13,imm13()}
+        | {imm16,imm16(),imm2()}. % XXX: simm16, simm12?
 -type am2()     :: #am2{}.
 -type arg()     :: temp() | integer().
 -type funv()    :: #aarch64_mfa{} | temp().
@@ -56,6 +58,7 @@ insn_temps(T, I) ->
   end.
 
 -spec am1_temps(subst_fun(), am1()) -> am1().
+am1_temps(_SubstTemp, T={_S,C}) when is_integer(C) -> T;
 am1_temps(_SubstTemp, T={_S,C,R}) when is_integer(C), is_integer(R) -> T;
 am1_temps(SubstTemp, T=#aarch64_temp{}) -> SubstTemp(T).
 

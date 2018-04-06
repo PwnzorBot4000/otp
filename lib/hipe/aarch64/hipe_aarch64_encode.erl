@@ -85,7 +85,7 @@ bfs(LeftBit, RightBit, Value) ->
 %%% AARCH64 Instructions
 %%%
 
-%%% Data Processing
+%%% Data Processing - Arithmetic
 
 data_imm_addsub_form(Sf, Op, S, Shift, Imm12, Rn, Rd) ->
   ?BIT(31,Sf) bor ?BIT(30,Op) bor ?BIT(29,S) bor ?BF(28,24,2#10001) bor ?BF(23,22,Shift) bor ?BF(21,10,Imm12) bor ?BF(9,5,Rn) bor ?BF(4,0,Rd).
@@ -109,6 +109,22 @@ sub({{'cond', 'al'}, {s,S}, Dst, Opnd, AmOpnd}) ->
 
 cmp({{'cond', 'al'}, Opnd, AmOpnd}) ->
   data_addsub_form(1, 1, {r, 31}, Opnd, AmOpnd).
+
+%%% Data Processing - Logical
+
+data_imm_logical_form(Sf, Opc, Imm, Rn, Rd) ->
+  N = Imm band (1 bsl 12),
+  Imms = Imm band (2#111111 bsl 6),
+  Immr = Imm band (2#111111),
+  ?BIT(31,Sf) bor ?BF(30,29,Opc) bor ?BF(28,23,2#100100) bor ?BIT(22,N) bor ?BF(21,16,Immr) bor ?BF(15,10,Imms) bor ?BF(9,5,Rn) bor ?BF(4,0,Rd).
+
+tst({{'cond', 'al'}, {r, Opnd}, AmOpnd}) ->
+  case AmOpnd of
+    {'immediate', {imm13, Imm13}} ->
+      data_imm_logical_form(1, 2#11, Imm13, Opnd, 31)
+  end.
+
+%%% Data Processing - Move
 
 data_mov_form(Sf, Opc, Hw, Imm16, Rd) ->
   ?BIT(31,Sf) bor ?BF(30,29,Opc) bor ?BF(28,23,2#100101) bor ?BF(22,21,Hw) bor ?BF(20,5,Imm16) bor ?BF(4,0,Rd).
@@ -183,5 +199,6 @@ insn_encode(Op, Opnds) ->
     'ret' -> ret(Opnds);
     'str' -> str(Opnds);
     'sub' -> sub(Opnds);
+    'tst' -> tst(Opnds);
     _ -> exit({?MODULE,insn_encode,Op})
   end.

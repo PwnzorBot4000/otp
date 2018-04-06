@@ -134,8 +134,8 @@ ra_am1(Am1, Map) ->
   case Am1 of
     #aarch64_temp{} ->
       ra_temp(Am1, Map);
-    {_Size,_Imm,_Shift} ->
-      Am1
+    {_Size,_Imm} -> Am1;
+    {_Size,_Imm,_Shift} -> Am1
   end.
 
 ra_am2(Am2=#am2{src=Src2,offset=Offset}, Map) ->

@@ -293,22 +293,35 @@ mk_addi(Dst, Src, Value, Rest) ->
 
 %%% Arithmetic operations (add, cmp) accept a 12-bit immediate.
 %%% Move operations accept a 16-bit immediate.
+%%% Arithmetic and move operations may accept a shifter operand.
+%%% Logical operations accept a 13-bit unsigned immediate,
+%%% in the form of 1:6:6 bits.
 
-try_aluop_imm(AluOp, Imm) -> % -> {NewAluOp,Am1} or []
-  ImmSize = case AluOp of
-    'mov' -> imm16;
-    _     -> imm12
-  end,
-  case imm_to_am1(Imm, ImmSize) of
-    (Am1={_Size,_Imm,_Imm2}) -> {AluOp, Am1};
-    [] ->
-      case invert_aluop_imm(AluOp, Imm) of
-	{NewAluOp,NewImm} ->
-	  case imm_to_am1(NewImm, ImmSize) of
-	    (Am1={_Size,_Imm,_Imm2}) -> {NewAluOp, Am1};
-	    [] -> []
-	  end;
-	[] -> []
+try_aluop_imm(AluOp, Imm) ->
+  case is_logical_op(AluOp) of
+    true ->
+      if Imm =/= (Imm band 2#1111111111111) ->
+        []; % Imm can't fit in 13 bits
+      true ->
+        {AluOp, {imm13, Imm}}
+      end;
+    false ->
+      ImmSize = case AluOp of
+        'mov' -> imm16;
+        'mvn' -> imm16;
+        _     -> imm12
+      end,
+      case imm_to_am1(Imm, ImmSize) of
+        (Am1={_Size,_Imm,_Imm2}) -> {AluOp, Am1};
+        [] ->
+          case invert_aluop_imm(AluOp, Imm) of
+    	{NewAluOp,NewImm} ->
+    	  case imm_to_am1(NewImm, ImmSize) of
+    	    (Am1={_Size,_Imm,_Imm2}) -> {NewAluOp, Am1};
+    	    [] -> []
+    	  end;
+    	[] -> []
+          end
       end
   end.
 
@@ -331,6 +344,7 @@ invert_aluop_imm(AluOp, Imm) ->
 %%% by 0 or 12 bits to the left.
 %%% Here we are converting a 64-bit value into a
 %%% 12/16-bit immediate and a 2-bit shifter operand.
+% XXX: shift negative immediates?
 
 imm_to_am1(Imm, Size) ->
   Imm64 = Imm band 16#FFFFFFFFFFFFFFFF,
@@ -357,7 +371,17 @@ imm_to_am1(Imm, Size, MaxImm, RotCnt) ->
 	  NewImm = Imm bsr Size,
 	  imm_to_am1(NewImm, NewRotCnt)
       end
-  end.     
+  end.
+
+is_logical_op(AluOp) ->
+  case AluOp of
+    'and' -> true;
+    'orr' -> true;
+    'eor' -> true;
+    'tst' -> true;
+    'b.eq' -> true;
+    _ -> false
+  end.
 
 mk_defun(MFA, Formals, IsClosure, IsLeaf, Code, Data, VarRange, LabelRange) ->
   #defun{mfa=MFA, formals=Formals, code=Code, data=Data,

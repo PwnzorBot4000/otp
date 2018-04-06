@@ -147,6 +147,7 @@ fix_am1(Am1, TempMap, Strategy) ->
   case Am1 of
     #aarch64_temp{} ->
       fix_src2(Am1, TempMap, Strategy);
+    {_Size,_Imm} -> {[], Am1, false};
     {_Size,_Imm,_Shift} -> {[], Am1, false}
   end.
 

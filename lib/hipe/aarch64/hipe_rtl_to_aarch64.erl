@@ -104,7 +104,7 @@ is_aluop_transitive(AluOp) ->
 conv_cmpop('add') -> 'cmn';
 conv_cmpop('sub') -> 'cmp';
 conv_cmpop('and') -> 'tst';
-conv_cmpop('xor') -> 'teq';
+conv_cmpop('xor') -> 'b.eq';
 conv_cmpop(_) -> none.
 
 mk_alu(S, Dst, Src1, RtlAluOp, Src2) ->
