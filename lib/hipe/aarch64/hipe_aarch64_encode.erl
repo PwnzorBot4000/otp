@@ -156,6 +156,14 @@ orr({{'cond', 'al'}, {s,_S}, {r,Dst}, {r,Opnd}, AmOpnd}) ->
       data_reg_shift_logical_form(1, 2#01, 2#00, 0, Register, 2#000000, Opnd, Dst)
   end.
 
+'and'({{'cond', 'al'}, {s,_S}, {r,Dst}, {r,Opnd}, AmOpnd}) ->
+  case AmOpnd of
+    {'immediate', {imm13, Imm13}} ->
+      data_imm_logical_form(1, 2#00, Imm13, Opnd, Dst);
+    {r, Register} ->
+      data_reg_shift_logical_form(1, 2#00, 2#00, 0, Register, 2#000000, Opnd, Dst)
+  end.
+
 tst({{'cond', 'al'}, {r, Opnd}, AmOpnd}) ->
   case AmOpnd of
     {'immediate', {imm13, Imm13}} ->
@@ -237,6 +245,7 @@ ret(_Opnds) ->
 insn_encode(Op, Opnds) ->
   case Op of
     'add' -> add(Opnds);
+    'and' -> 'and'(Opnds);
     'asr' -> asr(Opnds);
     'b'   -> b(Opnds);
     'bl'  -> bl(Opnds);
