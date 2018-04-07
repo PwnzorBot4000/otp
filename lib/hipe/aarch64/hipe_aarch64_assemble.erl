@@ -341,6 +341,7 @@ do_label_ref(Label) when is_integer(Label) ->
 do_am1(Am1) ->
   case Am1 of
     #aarch64_temp{} -> do_reg(Am1);
+    {imm6,Imm6} -> {'immediate', {imm6, Imm6}};
     {imm13,Imm13} -> {'immediate', {imm13, Imm13}};
     {imm12,Imm12,Imm2} -> {'immediate', {imm12, Imm12}, {imm2, Imm2}};
     {imm16,Imm16,Imm2} -> {'immediate', {imm16, Imm16}, {imm2, Imm2}}

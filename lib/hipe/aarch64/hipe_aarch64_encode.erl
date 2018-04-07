@@ -110,6 +110,20 @@ sub({{'cond', 'al'}, {s,S}, Dst, Opnd, AmOpnd}) ->
 cmp({{'cond', 'al'}, Opnd, AmOpnd}) ->
   data_addsub_form(1, 1, {r, 31}, Opnd, AmOpnd).
 
+%%% Data Processing - Bitfield
+
+data_imm_bitfield_form(Sf, Opc, N, Immr, Imms, Rn, Rd) ->
+  ?BIT(31,Sf) bor ?BF(30,29,Opc) bor ?BF(28,23,2#100110) bor ?BIT(22,N) bor ?BF(21,16,Immr) bor ?BF(15,10,Imms) bor ?BF(9,5,Rn) bor ?BF(4,0,Rd).
+
+sbfm({r,Dst}, {r,Src}, Shift, Move) ->
+  data_imm_bitfield_form(1, 2#00, 1, Shift, Move, Src, Dst).
+
+asr({{'cond', 'al'}, _S, Dst, Src, Shift}) ->
+  case Shift of
+    {'immediate', {imm6, Imm6}} ->
+      sbfm(Dst, Src, Imm6, 2#111111)
+  end.
+
 %%% Data Processing - Logical
 
 data_imm_logical_form(Sf, Opc, Imm, Rn, Rd) ->
@@ -202,6 +216,7 @@ ret(_Opnds) ->
 insn_encode(Op, Opnds) ->
   case Op of
     'add' -> add(Opnds);
+    'asr' -> asr(Opnds);
     'b'   -> b(Opnds);
     'bl'  -> bl(Opnds);
     'cmp' -> cmp(Opnds);

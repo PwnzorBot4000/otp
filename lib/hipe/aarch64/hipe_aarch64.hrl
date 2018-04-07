@@ -57,6 +57,7 @@
 %%% am1		::= {imm12,Imm12,Imm2}	imm12 shifted left 12*Imm2 bits [limitation: Imm2 =< 1]
 %%%         |   {imm16,Imm16,Imm2}	Imm16 shifted left 16*Imm2 bits
 %%%         |   {imm13,Imm13}		13-bit unsigned immediate
+%%%         |   {imm6,Imm6}			6-bit unsigned immediate
 %%%         |   src					register contents
 %%%
 %%% Note: am2 or "Addressing Mode 2" represents values that

@@ -296,6 +296,7 @@ mk_addi(Dst, Src, Value, Rest) ->
 %%% Arithmetic and move operations may accept a shifter operand.
 %%% Logical operations accept a 13-bit unsigned immediate,
 %%% in the form of 1:6:6 bits.
+%%% Shift operations accept a 6-bit unsigned immediate,
 
 try_aluop_imm(AluOp, Imm) ->
   case is_logical_op(AluOp) of
@@ -306,6 +307,14 @@ try_aluop_imm(AluOp, Imm) ->
         {AluOp, {imm13, Imm}}
       end;
     false ->
+  case is_shift_op(AluOp) of
+    true ->
+      if Imm =/= (Imm band 2#111111) ->
+        []; % Imm can't fit in 6 bits
+      true ->
+        {AluOp, {imm6, Imm}}
+      end;
+    false -> % Arithmetic / move op
       ImmSize = case AluOp of
         'mov' -> imm16;
         'mvn' -> imm16;
@@ -323,6 +332,7 @@ try_aluop_imm(AluOp, Imm) ->
     	[] -> []
           end
       end
+  end
   end.
 
 invert_aluop_imm(AluOp, Imm) ->
@@ -380,6 +390,15 @@ is_logical_op(AluOp) ->
     'eor' -> true;
     'tst' -> true;
     'b.eq' -> true;
+    _ -> false
+  end.
+
+is_shift_op(AluOp) ->
+  case AluOp of
+    'asr' -> true;
+    'lsl' -> true;
+    'lsr' -> true;
+    'ror' -> true;
     _ -> false
   end.
 
