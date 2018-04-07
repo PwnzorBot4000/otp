@@ -140,6 +140,12 @@ mov({{'cond', 'al'}, {s,0}, {r, Dst}, Src}) ->
       data_reg_shift_logical_form(1, 2#01, 2#00, 0, Register, 2#000000, 2#11111, Dst)
   end.
 
+mvn({{'cond', 'al'}, {s,0}, {r, Dst}, Src}) ->
+  case Src of
+    {'immediate', {imm16, Imm16}, {imm2, Imm2}} ->
+      data_mov_form(1, 2#00, Imm2, Imm16, Dst)
+  end.
+
 %%% Loads / Stores
 
 ldstr_imm_form(Size, V, Opc, Imm12, Rn, Rt) ->
@@ -196,6 +202,7 @@ insn_encode(Op, Opnds) ->
     'cmp' -> cmp(Opnds);
     'ldr' -> ldr(Opnds);
     'mov' -> mov(Opnds);
+    'mvn' -> mvn(Opnds);
     'ret' -> ret(Opnds);
     'str' -> str(Opnds);
     'sub' -> sub(Opnds);
