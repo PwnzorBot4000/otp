@@ -151,6 +151,9 @@ mvn({{'cond', 'al'}, {s,0}, {r, Dst}, Src}) ->
 ldstr_imm_form(Size, V, Opc, Imm12, Rn, Rt) ->
   ?BF(31,30,Size) bor ?BF(29,27,2#111) bor ?BIT(26,V) bor ?BF(25,24,2#01) bor ?BF(23,22,Opc) bor ?BF(21,10,Imm12) bor ?BF(9,5,Rn) bor ?BF(4,0,Rt).
 
+ldstr_reg_form(Size, V, Opc, Rm, Option, S, Rn, Rt) ->
+  ?BF(31,30,Size) bor ?BF(29,27,2#111) bor ?BIT(26,V) bor ?BF(25,24,2#00) bor ?BF(23,22,Opc) bor ?BIT(21,1) bor ?BF(20,16,Rm) bor ?BF(15,13,Option) bor ?BIT(12,S) bor ?BF(11,10,2#10) bor ?BF(9,5,Rn) bor ?BF(4,0,Rt).
+
 ldstr_pcrel_form(Opc, V, Imm19, Rt) ->
   ?BF(31,30,Opc) bor ?BF(29,27,2#011) bor ?BIT(26,V) bor ?BF(25,24,2#00) bor ?BFS(23,5,Imm19) bor ?BF(4,0,Rt).
 
@@ -158,6 +161,8 @@ ldr({{'cond', 'al'}, {r, Dst}, Src}) ->
   case Src of
     {'immediate_offset', {r, Base}, {imm12, Offset}} ->
       ldstr_imm_form(2#11, 2#0, 2#01, Offset, Base, Dst);
+    {'register_offset', {r, Base}, {r, Offset}} ->
+      ldstr_reg_form(2#11, 2#0, 2#01, Offset, 2#011, 0, Base, Dst);
     {'pc-relative', {imm19, Offset}} ->
       ldstr_pcrel_form(2#01, 2#0, Offset, Dst)
   end.
