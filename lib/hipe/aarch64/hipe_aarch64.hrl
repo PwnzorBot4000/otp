@@ -48,19 +48,24 @@
 %%%
 %%% s		::= true | false
 %%%
-%%% imm<N>	::= <an N-bit non-negative integer>
+%%% Imm<N>	::= <an N-bit non-negative integer>
 %%%
-%%% Note: am1 represents all 11 variants of "Adressing Mode 1".
+%%% Note: am1 or "Adressing Mode 1" represents values that
+%%% will be used as data, ie. arithmetic, logical and moves
+%%% that use them as the content to be transferred.
 %%%
 %%% am1		::= {imm12,Imm12,Imm2}	imm12 shifted left 12*Imm2 bits [limitation: Imm2 =< 1]
 %%%         |   {imm16,Imm16,Imm2}	Imm16 shifted left 16*Imm2 bits
-%%% shiftop	::= lsl | lsr | asr | ror
+%%%         |   {imm13,Imm13}		13-bit unsigned immediate
+%%%         |   src					register contents
 %%%
-%%% Note: am2 can represent the first 3 variants of "Addressing Mode 2",
-%%% i.e., not the pre- or post-indexed variants.
+%%% Note: am2 or "Addressing Mode 2" represents values that
+%%% will be used for address calculation, ie. by loads, stores
+%%% and branch instructions.
 %%%
 %%% am2		::= #am2{src, am2offset}
-%%% am2offset	::= imm12 | src | {src,rrx} | {src,shiftop,imm5}
+%%% am2offset	::= imm		immediate offset
+%%%             |   src		register offset
 %%%
 %%% Note: am3 can represent the first 2 variants of "Addressing Mode 3",
 %%% i.e., not the pre- or post-indexed variants.

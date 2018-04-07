@@ -349,8 +349,8 @@ do_am1(Am1) ->
 do_am2(#am2{src=Src,offset=Offset}) ->
   NewSrc = do_reg(Src),
   case Offset of
-    #aarch64_temp{} -> {'register_offset',NewSrc,do_reg(Offset)};
-    Imm12 -> {'immediate_offset',NewSrc,{imm12,Imm12}}
+    #aarch64_temp{} -> {'register_offset', NewSrc, do_reg(Offset)};
+    Imm -> {'immediate_offset', NewSrc, {imm12, Imm bsr 3}}
   end.
 
 %%%

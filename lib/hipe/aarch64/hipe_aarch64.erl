@@ -147,8 +147,8 @@ mk_label(Label) -> #label{label=Label}.
 is_label(I) -> case I of #label{} -> true; _ -> false end.
 label_label(#label{label=Label}) -> Label.
 
-% Register - relative loads in aarch64 will accept a 12-bit scaled
-% unsigned immediate offset, meaning a range of 0 - 32760.
+% Register - relative loads in aarch64 will accept a 12-bit 8x scaled
+% unsigned immediate offset, meaning a range of 0 - 16#7FF8.
 % For greater range or negative offsets, we use register offset
 % via a scratch register.
 % The scratch register can be the destination register, since
@@ -157,7 +157,7 @@ label_label(#label{label=Label}) -> Label.
 mk_load(LdOp, Dst, Am2) -> #load{ldop=LdOp, dst=Dst, am2=Am2}.
 
 mk_load(LdOp, Dst, Base, Offset, Scratch, Rest) when is_integer(Offset) ->
-  if Offset >= 0 andalso Offset =< 32760 ->
+  if Offset >= 0 andalso Offset =< 16#7FF8 ->
       Am2 = #am2{src=Base,offset=Offset},
       [mk_load(LdOp, Dst, Am2) | Rest];
      true ->
