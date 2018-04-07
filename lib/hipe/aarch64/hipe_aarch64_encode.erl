@@ -110,6 +110,9 @@ sub({{'cond', 'al'}, {s,S}, Dst, Opnd, AmOpnd}) ->
 cmp({{'cond', 'al'}, Opnd, AmOpnd}) ->
   data_addsub_form(1, 1, {r, 31}, Opnd, AmOpnd).
 
+cmn({{'cond', 'al'}, Opnd, AmOpnd}) ->
+  data_addsub_form(0, 1, {r, 31}, Opnd, AmOpnd).
+
 %%% Data Processing - Bitfield
 
 data_imm_bitfield_form(Sf, Opc, N, Immr, Imms, Rn, Rd) ->
@@ -250,6 +253,7 @@ insn_encode(Op, Opnds) ->
     'b'   -> b(Opnds);
     'bl'  -> bl(Opnds);
     'cmp' -> cmp(Opnds);
+    'cmn' -> cmn(Opnds);
     'ldr' -> ldr(Opnds);
     'lsl' -> lsl(Opnds);
     'mov' -> mov(Opnds);
