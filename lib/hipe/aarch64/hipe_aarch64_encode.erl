@@ -118,10 +118,23 @@ data_imm_bitfield_form(Sf, Opc, N, Immr, Imms, Rn, Rd) ->
 sbfm({r,Dst}, {r,Src}, Shift, Move) ->
   data_imm_bitfield_form(1, 2#00, 1, Shift, Move, Src, Dst).
 
+ubfm({r,Dst}, {r,Src}, Rotate, Move) ->
+  data_imm_bitfield_form(1, 2#10, 1, Rotate, Move, Src, Dst).
+
 asr({{'cond', 'al'}, _S, Dst, Src, Shift}) ->
   case Shift of
     {'immediate', {imm6, Imm6}} ->
       sbfm(Dst, Src, Imm6, 2#111111)
+  end.
+
+lsl({{'cond', 'al'}, _S, Dst, Src, Shift}) ->
+  case Shift of
+    {'immediate', {imm6, Imm6}} when Imm6 =/= 0 ->
+      ubfm(Dst, Src, Imm6, Imm6 - 1);
+    {'r', Rm} ->
+      {'r', Rn} = Src,
+      {'r', Rd} = Dst,
+      ?BIT(31,1) bor ?BF(30,21,2#0011010110) bor ?BF(9,5,Rm) bor ?BF(15,10,2#001000) bor ?BF(9,5,Rn) bor ?BF(4,0,Rd)
   end.
 
 %%% Data Processing - Logical
@@ -221,6 +234,7 @@ insn_encode(Op, Opnds) ->
     'bl'  -> bl(Opnds);
     'cmp' -> cmp(Opnds);
     'ldr' -> ldr(Opnds);
+    'lsl' -> lsl(Opnds);
     'mov' -> mov(Opnds);
     'mvn' -> mvn(Opnds);
     'ret' -> ret(Opnds);
