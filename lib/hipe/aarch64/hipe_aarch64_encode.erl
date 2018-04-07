@@ -131,9 +131,9 @@ lsl({{'cond', 'al'}, _S, Dst, Src, Shift}) ->
   case Shift of
     {'immediate', {imm6, Imm6}} when Imm6 =/= 0 ->
       ubfm(Dst, Src, Imm6, Imm6 - 1);
-    {'r', Rm} ->
-      {'r', Rn} = Src,
-      {'r', Rd} = Dst,
+    {r, Rm} ->
+      {r, Rn} = Src,
+      {r, Rd} = Dst,
       ?BIT(31,1) bor ?BF(30,21,2#0011010110) bor ?BF(9,5,Rm) bor ?BF(15,10,2#001000) bor ?BF(9,5,Rn) bor ?BF(4,0,Rd)
   end.
 
@@ -145,6 +145,17 @@ data_imm_logical_form(Sf, Opc, Imm, Rn, Rd) ->
   Immr = Imm band (2#111111),
   ?BIT(31,Sf) bor ?BF(30,29,Opc) bor ?BF(28,23,2#100100) bor ?BIT(22,N) bor ?BF(21,16,Immr) bor ?BF(15,10,Imms) bor ?BF(9,5,Rn) bor ?BF(4,0,Rd).
 
+data_reg_shift_logical_form(Sf, Opc, Shift, N, Rm, Imm6, Rn, Rd) ->
+  ?BIT(31,Sf) bor ?BF(30,29,Opc) bor ?BF(28,24,2#01010) bor ?BF(23,22,Shift) bor ?BIT(21,N) bor ?BF(20,16,Rm) bor ?BF(15,10,Imm6) bor ?BF(9,5,Rn) bor ?BF(4,0,Rd).
+
+orr({{'cond', 'al'}, {s,_S}, {r,Dst}, {r,Opnd}, AmOpnd}) ->
+  case AmOpnd of
+    {'immediate', {imm13, Imm13}} ->
+      data_imm_logical_form(1, 2#01, Imm13, Opnd, Dst);
+    {r, Register} ->
+      data_reg_shift_logical_form(1, 2#01, 2#00, 0, Register, 2#000000, Opnd, Dst)
+  end.
+
 tst({{'cond', 'al'}, {r, Opnd}, AmOpnd}) ->
   case AmOpnd of
     {'immediate', {imm13, Imm13}} ->
@@ -153,16 +164,13 @@ tst({{'cond', 'al'}, {r, Opnd}, AmOpnd}) ->
 
 %%% Data Processing - Move
 
-data_mov_form(Sf, Opc, Hw, Imm16, Rd) ->
+data_imm_mov_form(Sf, Opc, Hw, Imm16, Rd) ->
   ?BIT(31,Sf) bor ?BF(30,29,Opc) bor ?BF(28,23,2#100101) bor ?BF(22,21,Hw) bor ?BF(20,5,Imm16) bor ?BF(4,0,Rd).
-
-data_reg_shift_logical_form(Sf, Opc, Shift, N, Rm, Imm6, Rn, Rd) ->
-  ?BIT(31,Sf) bor ?BF(30,29,Opc) bor ?BF(28,24,2#01010) bor ?BF(23,22,Shift) bor ?BIT(21,N) bor ?BF(20,16,Rm) bor ?BF(15,10,Imm6) bor ?BF(9,5,Rn) bor ?BF(4,0,Rd).
 
 mov({{'cond', 'al'}, {s,0}, {r, Dst}, Src}) ->
   case Src of
     {'immediate', {imm16, Imm16}, {imm2, Imm2}} ->
-      data_mov_form(1, 2#10, Imm2, Imm16, Dst);
+      data_imm_mov_form(1, 2#10, Imm2, Imm16, Dst);
     {r, Register} ->
       data_reg_shift_logical_form(1, 2#01, 2#00, 0, Register, 2#000000, 2#11111, Dst)
   end.
@@ -170,7 +178,7 @@ mov({{'cond', 'al'}, {s,0}, {r, Dst}, Src}) ->
 mvn({{'cond', 'al'}, {s,0}, {r, Dst}, Src}) ->
   case Src of
     {'immediate', {imm16, Imm16}, {imm2, Imm2}} ->
-      data_mov_form(1, 2#00, Imm2, Imm16, Dst)
+      data_imm_mov_form(1, 2#00, Imm2, Imm16, Dst)
   end.
 
 %%% Loads / Stores
@@ -237,6 +245,7 @@ insn_encode(Op, Opnds) ->
     'lsl' -> lsl(Opnds);
     'mov' -> mov(Opnds);
     'mvn' -> mvn(Opnds);
+    'orr' -> orr(Opnds);
     'ret' -> ret(Opnds);
     'str' -> str(Opnds);
     'sub' -> sub(Opnds);
