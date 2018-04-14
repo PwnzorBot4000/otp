@@ -147,20 +147,17 @@ mk_label(Label) -> #label{label=Label}.
 is_label(I) -> case I of #label{} -> true; _ -> false end.
 label_label(#label{label=Label}) -> Label.
 
-% Register - relative loads in aarch64 will accept a 12-bit 8x scaled
-% unsigned immediate offset, meaning a range of 0 - 16#7FF8.
-% For greater range or negative offsets, we use register offset
-% via a scratch register.
-% The scratch register can be the destination register, since
-% its contents are ultimately going to be overridden.
+% In loads, the scratch register can be the destination register,
+% since its contents are ultimately going to be overridden.
 
 mk_load(LdOp, Dst, Am2) -> #load{ldop=LdOp, dst=Dst, am2=Am2}.
 
-mk_load(LdOp, Dst, Base, Offset, Scratch, Rest) when is_integer(Offset) ->
-  if Offset >= 0 andalso Offset =< 16#7FF8 ->
-      Am2 = #am2{src=Base,offset=Offset},
+mk_load(LdOp, Dst, Base, Offset, Scratch, Rest) ->
+  Am2 = imm_to_am2(Base, Offset),
+  case Am2 of
+    #am2{} ->
       [mk_load(LdOp, Dst, Am2) | Rest];
-     true ->
+    [] ->
       Index =
     begin
       DstReg = temp_reg(Dst),
@@ -169,9 +166,8 @@ mk_load(LdOp, Dst, Base, Offset, Scratch, Rest) when is_integer(Offset) ->
          true -> mk_scratch(Scratch)
       end
     end,
-      Am2 = #am2{src=Base,offset=Index},
       mk_li(Index, Offset,
-	    [mk_load(LdOp, Dst, Am2) | Rest])
+        [mk_load(LdOp, Dst, Am2) | Rest])
   end.
 
 mk_scratch(Scratch) ->
@@ -236,22 +232,17 @@ pseudo_tailcall_linkage(#pseudo_tailcall{linkage=Linkage}) -> Linkage.
 
 mk_pseudo_tailcall_prepare() -> #pseudo_tailcall_prepare{}.
 
-% Register-relative stores in aarch64 will accept a 12-bit scaled
-% unsigned immediate offset, meaning a range of 0 - 32760.
-% For greater range or negative offsets, we use register offset
-% via a scratch register.
-
 mk_store(StOp, Src, Am2) -> #store{stop=StOp, src=Src, am2=Am2}.
 
-mk_store(StOp, Src, Base, Offset, Scratch, Rest) when is_integer(Offset) ->
-  if Offset >= 0 andalso Offset =< 32760 ->
-      Am2 = #am2{src=Base,offset=Offset},
+mk_store(StOp, Src, Base, Offset, Scratch, Rest) ->
+  Am2 = imm_to_am2(Base, Offset),
+  case Am2 of
+    #am2{} ->
       [mk_store(StOp, Src, Am2) | Rest];
-     true ->
+    [] ->
       Index = mk_scratch(Scratch),
-      Am2 = #am2{src=Base,offset=Index},
       mk_li(Index, Offset,
-	    [mk_store(StOp, Src, Am2) | Rest])
+        [mk_store(StOp, Src, Am2) | Rest])
   end.
 
 mk_pseudo_blr() -> #pseudo_blr{}.
@@ -401,6 +392,21 @@ is_shift_op(AluOp) ->
     'ror' -> true;
     _ -> false
   end.
+
+% Loads and stores in aarch64 will accept a 12-bit 8x scaled
+% unsigned immediate offset, meaning a range of 0 - 16#7FF8.
+% For unaligned offsets, unscaled 9-bit immediate instructions exist,
+% with a range of -256 - 255.
+% For greater ranges, we use register offset via a scratch register.
+
+imm_to_am2(Base, Offset) when is_integer(Offset) ->
+  if (((Offset band 2#111) == 0 andalso
+       Offset >= 0 andalso Offset =< 16#7FF8) orelse
+      (Offset >= -256 andalso Offset =< 255))->
+      #am2{src=Base,offset=Offset};
+    true -> []
+  end.
+
 
 mk_defun(MFA, Formals, IsClosure, IsLeaf, Code, Data, VarRange, LabelRange) ->
   #defun{mfa=MFA, formals=Formals, code=Code, data=Data,
