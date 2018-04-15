@@ -67,34 +67,16 @@ do_insn(I, LiveOut, Context, FPoff) ->
       {do_pseudo_blr(I, Context, FPoff), context_framesize(Context)};
     #pseudo_call{} ->
       do_pseudo_call(I, LiveOut, Context, FPoff);
+    #pseudo_call_prepare{} ->
+      do_pseudo_call_prepare(I, FPoff);
     #pseudo_move{} ->
       {do_pseudo_move(I, Context, FPoff), FPoff};
     #pseudo_spill_move{} ->
       {do_pseudo_spill_move(I, Context, FPoff), FPoff};
     #pseudo_tailcall{} ->
       {do_pseudo_tailcall(I, Context), context_framesize(Context)};
-    #alu{} ->
-      {[I], FPoff};
-    #b_label{} ->
-      {[I], FPoff};
-    #cmp{} ->
-      {[I], FPoff};
-    #comment{} ->
-      {[I], FPoff};
-    #load{} ->
-      {[I], FPoff};
-    #move{} ->
-      {[I], FPoff};
-    #store{} ->
-      {[I], FPoff};
-    #pseudo_bc{} ->
-      {[I], FPoff};
-    #pseudo_li{} ->
-      {[I], FPoff};
-    #pseudo_tailcall_prepare{} ->
+    _ ->
       {[I], FPoff}
-    %_ ->  % temporarily adding all default cases explicitly.
-    %  {[I], FPoff}
   end.
 
 %%%
@@ -174,6 +156,12 @@ adjust_sp(N, Rest) ->
 %%%
 %%% Recursive calls.
 %%%
+
+do_pseudo_call_prepare(I, FPoff0) ->
+  %% Create outgoing arguments area on the stack.
+  NrStkArgs = hipe_aarch64:pseudo_call_prepare_nrstkargs(I),
+  Offset = NrStkArgs * word_size(),
+  {adjust_sp(-Offset, []), FPoff0 + Offset}.
 
 do_pseudo_call(I, LiveOut, Context, FPoff0) ->
   #aarch64_sdesc{exnlab=ExnLab,arity=OrigArity} = hipe_aarch64:pseudo_call_sdesc(I),

@@ -44,6 +44,7 @@ insn_def_gpr(I) ->
     #pseudo_tailcall_prepare{} -> tailcall_clobbered_gpr();
     #pseudo_bc{} -> [];
     #pseudo_blr{} -> [];
+    #pseudo_call_prepare{} -> [];
     #b_label{} -> [];
     #cmp{} -> [];
     #comment{} -> [];
@@ -85,6 +86,7 @@ insn_use_gpr(I) ->
       addargs(StkArgs, addtemps(tailcall_clobbered_gpr(), funv_use(FunV, arity_use_gpr(Arity))));
     #store{src=Src,am2=Am2} -> am2_use(Am2, [Src]);
     #pseudo_bc{} -> [];
+    #pseudo_call_prepare{} -> [];
     #pseudo_li{} -> [];
     #pseudo_tailcall_prepare{} -> [];
     #b_label{} -> [];

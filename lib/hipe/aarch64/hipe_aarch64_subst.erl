@@ -53,6 +53,7 @@ insn_temps(T, I) ->
       #label{} -> I;
       #pseudo_bc{} -> I;
       #pseudo_blr{} -> I;
+      #pseudo_call_prepare{} -> I;
       #pseudo_li{dst=D} -> I#pseudo_li{dst=T(D)};
       #pseudo_tailcall{funv=F,stkargs=Stk} ->
 	  I#pseudo_tailcall{funv=funv_temps(T,F),stkargs=lists:map(Arg,Stk)};

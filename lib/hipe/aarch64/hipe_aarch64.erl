@@ -16,6 +16,7 @@
 -export([
 	 mk_temp/2,
      mk_new_temp/1,
+	 mk_new_nonallocatable_temp/1,
 	 is_temp/1,
      temp_reg/1,
 	 temp_type/1,
@@ -58,6 +59,9 @@
 	 pseudo_call_sdesc/1,
 	 pseudo_call_linkage/1,
 
+	 mk_pseudo_call_prepare/1,
+	 pseudo_call_prepare_nrstkargs/1,
+
      mk_move/2,
 
 	 mk_pseudo_bc/4,
@@ -87,6 +91,7 @@
      mk_mtlr/1,
      mk_lr/0,
 
+	 mk_li/2,
 	 mk_li/3,
 
      mk_addi/4,
@@ -110,6 +115,7 @@ mk_temp(Reg, Type) -> mk_temp(Reg, Type, true).
 mk_new_temp(Type, Allocatable) ->
   mk_temp(hipe_gensym:get_next_var(aarch64), Type, Allocatable).
 mk_new_temp(Type) -> mk_new_temp(Type, true).
+mk_new_nonallocatable_temp(Type) -> mk_new_temp(Type, false).
 is_temp(X) -> case X of #aarch64_temp{} -> true; _ -> false end.
 temp_reg(#aarch64_temp{reg=Reg}) -> Reg.
 temp_type(#aarch64_temp{type=Type}) -> Type.
@@ -214,6 +220,11 @@ pseudo_call_sdesc(#pseudo_call{sdesc=SDesc}) -> SDesc.
 pseudo_call_contlab(#pseudo_call{contlab=ContLab}) -> ContLab.
 pseudo_call_linkage(#pseudo_call{linkage=Linkage}) -> Linkage.
 
+mk_pseudo_call_prepare(NrStkArgs) ->
+  #pseudo_call_prepare{nrstkargs=NrStkArgs}.
+pseudo_call_prepare_nrstkargs(#pseudo_call_prepare{nrstkargs=NrStkArgs}) ->
+  NrStkArgs.
+
 mk_pseudo_li(Dst, Imm) ->
   #pseudo_li{dst=Dst, imm=Imm, label=hipe_gensym:get_next_label(aarch64)}.
 
@@ -252,6 +263,7 @@ mk_mtlr(Src) -> mk_move(mk_lr(), Src).
 mk_lr() -> mk_temp(hipe_aarch64_registers:lr(), 'untagged').
 
 %%% Load an integer constant into a register.
+mk_li(Dst, Value) -> mk_li(Dst, Value, []).
 
 mk_li(Dst, Value, Rest) ->
   %% XXX: expand to handle 2-instruction sequences
@@ -287,7 +299,9 @@ mk_addi(Dst, Src, Value, Rest) ->
 %%% Arithmetic and move operations may accept a shifter operand.
 %%% Logical operations accept a 13-bit unsigned immediate,
 %%% in the form of 1:6:6 bits.
-%%% Shift operations accept a 6-bit unsigned immediate,
+%%% Shift operations accept a 6-bit unsigned immediate.
+%%% Negative immediates in alus and moves are inserted by inverting
+%%% the operation (i.e. sub for add, cmn for cmp, mvn for mov).
 
 try_aluop_imm(AluOp, Imm) ->
   case is_logical_op(AluOp) of
@@ -345,8 +359,8 @@ invert_aluop_imm(AluOp, Imm) ->
 %%% by 0 or 12 bits to the left.
 %%% Here we are converting a 64-bit value into a
 %%% 12/16-bit immediate and a 2-bit shifter operand.
-% XXX: shift negative immediates?
 
+imm_to_am1(Imm, _Size) when Imm < 0 -> [];
 imm_to_am1(Imm, Size) ->
   Imm64 = Imm band 16#FFFFFFFFFFFFFFFF,
   SplitImm = case Size of
@@ -370,7 +384,7 @@ imm_to_am1(Imm, Size, MaxImm, RotCnt) ->
      true ->
       NewRotCnt = RotCnt + 1,
 	  NewImm = Imm bsr Size,
-	  imm_to_am1(NewImm, NewRotCnt)
+	  imm_to_am1(NewImm, NewRotCnt, MaxImm, NewRotCnt)
       end
   end.
 

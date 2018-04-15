@@ -100,7 +100,7 @@
 -record(pseudo_blr, {}).		% alias for "ret" to help cfg
 -record(pseudo_bx, {src}).		% alias for nonlocal jump to help cfg
 -record(pseudo_call, {funv, sdesc, contlab, linkage}).
-%-record(pseudo_call_prepare, {nrstkargs}).
+-record(pseudo_call_prepare, {nrstkargs}).
 -record(pseudo_li, {dst, imm, label}).	% pre-generated label for use by the assembler
 -record(pseudo_move, {dst, src}).
 -record(pseudo_spill_move, {dst, temp, src}).

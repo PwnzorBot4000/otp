@@ -60,6 +60,7 @@ do_insn(I, TempMap, Strategy) ->
     #store{} -> do_store(I, TempMap, Strategy);
     #pseudo_bc{} -> {[I], false};
     #pseudo_blr{} -> {[I], false};
+    #pseudo_call_prepare{} -> {[I], false};
     #pseudo_tailcall_prepare{} -> {[I], false};
     #b_label{} -> {[I], false};
     #comment{} -> {[I], false}

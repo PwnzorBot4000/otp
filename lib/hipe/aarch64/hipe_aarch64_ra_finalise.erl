@@ -49,6 +49,7 @@ ra_insn_1(I, Map) ->
     #pseudo_blr{} -> I;
     #pseudo_tailcall_prepare{} -> I;
     #pseudo_bc{} -> I;
+    #pseudo_call_prepare{} -> I;
     #b_label{} -> I;
     #comment{} -> I
     % _ -> I % temporarily adding all default cases explicitly.

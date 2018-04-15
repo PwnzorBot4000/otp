@@ -140,6 +140,12 @@ lsl({{'cond', 'al'}, _S, Dst, Src, Shift}) ->
       ?BIT(31,1) bor ?BF(30,21,2#0011010110) bor ?BF(9,5,Rm) bor ?BF(15,10,2#001000) bor ?BF(9,5,Rn) bor ?BF(4,0,Rd)
   end.
 
+lsr({{'cond', 'al'}, _S, Dst, Src, Shift}) ->
+  case Shift of
+    {'immediate', {imm6, Imm6}} when Imm6 =/= 0 ->
+      ubfm(Dst, Src, Imm6, 63)
+  end.
+
 %%% Data Processing - Logical
 
 data_imm_logical_form(Sf, Opc, Imm, Rn, Rd) ->
@@ -261,6 +267,7 @@ insn_encode(Op, Opnds) ->
     'cmn' -> cmn(Opnds);
     'ldr' -> ldr(Opnds);
     'lsl' -> lsl(Opnds);
+    'lsr' -> lsr(Opnds);
     'mov' -> mov(Opnds);
     'mvn' -> mvn(Opnds);
     'orr' -> orr(Opnds);
