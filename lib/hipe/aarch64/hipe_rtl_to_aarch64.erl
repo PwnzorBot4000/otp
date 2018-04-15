@@ -107,6 +107,11 @@ conv_cmpop('and') -> 'tst';
 conv_cmpop('xor') -> 'b.eq';
 conv_cmpop(_) -> none.
 
+cmpop_commutes('cmp') -> false;
+cmpop_commutes('cmn') -> true;
+cmpop_commutes('tst') -> true;
+cmpop_commutes('teq') -> true.
+
 mk_alu(S, Dst, Src1, RtlAluOp, Src2) ->
   AluOp = conv_aluop(RtlAluOp),
   case hipe_aarch64:is_temp(Src1) of
@@ -215,7 +220,17 @@ mk_branch(Src1, CmpOp, Src2, Cond, TrueLab, FalseLab, Pred) ->
 	  mk_branch_ri(Src1, CmpOp, Src2, Cond, TrueLab, FalseLab, Pred)
       end;
     _ ->
-      throw("unimplemented")
+      case hipe_aarch64:is_temp(Src2) of
+	true ->
+	  NewCond =
+	    case cmpop_commutes(CmpOp) of
+	      true -> Cond;
+	      false ->  commute_cond(Cond)
+	    end,
+	  mk_branch_ri(Src2, CmpOp, Src1, NewCond, TrueLab, FalseLab, Pred);
+	_ ->
+	  throw("unimplemented") % XXX should optimize out?
+      end
   end.
 
 mk_branch_ri(Src, CmpOp, Imm, Cond, TrueLab, FalseLab, Pred) ->
@@ -556,6 +571,24 @@ conv_branch_cond(Cond) -> % may be unsigned
     leu -> 'ls';
     _   -> conv_cond(Cond)
   end.    
+
+%%% Commute an ARM condition code.
+
+commute_cond(Cond) ->	% if x Cond y, then y commute_cond(Cond) x
+  case Cond of
+    'eq' -> 'eq';	% ==, ==
+    'ne' -> 'ne';	% !=, !=
+    'gt' -> 'lt';	% >, <
+    'ge' -> 'le';	% >=, <=
+    'lt' -> 'gt';	% <, >
+    'le' -> 'ge';	% <=, >=
+    'hi' -> 'lo';	% >u, <u
+    'hs' -> 'ls';	% >=u, <=u
+    'lo' -> 'hi';	% <u, >u
+    'ls' -> 'hs';	% <=u, >=u
+    %% vs/vc: n/a
+    _ -> exit({?MODULE,commute_cond,Cond})
+  end.
 
 %%% Split a list of formal or actual parameters into the
 %%% part passed in registers and the part passed on the stack.

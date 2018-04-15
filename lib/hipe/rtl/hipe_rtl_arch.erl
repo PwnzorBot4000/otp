@@ -312,6 +312,7 @@ log2_word_size() ->
     powerpc    -> 2;
     ppc64      -> 3;
     arm	       -> 2;
+    aarch64	   -> 3;
     x86        -> 2;
     amd64      -> 3
   end.
