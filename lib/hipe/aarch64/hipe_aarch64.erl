@@ -297,8 +297,8 @@ mk_addi(Dst, Src, Value, Rest) ->
 %%% Arithmetic operations (add, cmp) accept a 12-bit immediate.
 %%% Move operations accept a 16-bit immediate.
 %%% Arithmetic and move operations may accept a shifter operand.
-%%% Logical operations accept a 13-bit unsigned immediate,
-%%% in the form of 1:6:6 bits.
+%%% Logical operations accept a bitmask in the form 1:6:6, which
+%%% describes a pattern of bits that will generate the immediate.
 %%% Shift operations accept a 6-bit unsigned immediate.
 %%% Negative immediates in alus and moves are inserted by inverting
 %%% the operation (i.e. sub for add, cmn for cmp, mvn for mov).
@@ -306,10 +306,9 @@ mk_addi(Dst, Src, Value, Rest) ->
 try_aluop_imm(AluOp, Imm) ->
   case is_logical_op(AluOp) of
     true ->
-      if Imm =/= (Imm band 2#1111111111111) ->
-        []; % Imm can't fit in 13 bits
-      true ->
-        {AluOp, {imm13, Imm}}
+      case imm_to_bitmask(Imm) of
+        (Am1 = {bitmask, _, _, _}) -> {AluOp, Am1};
+        [] -> []
       end;
     false ->
   case is_shift_op(AluOp) of
@@ -349,6 +348,9 @@ invert_aluop_imm(AluOp, Imm) ->
     'add' -> {'sub', -Imm};
     'sub' -> {'add', -Imm}
   end.
+
+imm_to_bitmask(_Imm) ->
+  [].
 
 %%% Create a 'shifter operand'.
 %%% Immediates on moves have to be 16 bits long, however

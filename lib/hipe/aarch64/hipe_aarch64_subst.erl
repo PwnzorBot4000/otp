@@ -18,15 +18,15 @@
 
 %% These should be moved to hipe_aarch64 and exported
 -type temp()    :: #aarch64_temp{}.
+-type bit()     :: 0..1.
 -type imm2()    :: 0..3.
 -type imm6()    :: 0..63.
 -type imm12()   :: 0..4095.
--type imm13()   :: 0..8191.
 -type imm16()   :: 0..65535.
 -type am1()     :: {imm12,imm12(),imm2()}
-        | {imm16,imm16(),imm2()} % XXX: simm16, simm12?
+        | {imm16,imm16(),imm2()}
         | {imm6,imm6()}
-        | {imm13,imm13()}.
+        | {bitmask,bit(),imm6(),imm6()}.
 -type am2()     :: #am2{}.
 -type arg()     :: temp() | integer().
 -type funv()    :: #aarch64_mfa{} | temp().

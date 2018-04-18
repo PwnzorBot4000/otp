@@ -342,9 +342,9 @@ do_am1(Am1) ->
   case Am1 of
     #aarch64_temp{} -> do_reg(Am1);
     {imm6,Imm6} -> {'immediate', {imm6, Imm6}};
-    {imm13,Imm13} -> {'immediate', {imm13, Imm13}};
     {imm12,Imm12,Imm2} -> {'immediate', {imm12, Imm12}, {imm2, Imm2}};
-    {imm16,Imm16,Imm2} -> {'immediate', {imm16, Imm16}, {imm2, Imm2}}
+    {imm16,Imm16,Imm2} -> {'immediate', {imm16, Imm16}, {imm2, Imm2}};
+    {bitmask,N,Imms,Immr} -> {'bitmask', {n, N}, {imms, Imms}, {immr, Immr}}
   end.
 
 do_am2(#am2{src=Src,offset=Offset}) ->

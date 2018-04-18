@@ -148,10 +148,7 @@ lsr({{'cond', 'al'}, _S, Dst, Src, Shift}) ->
 
 %%% Data Processing - Logical
 
-data_imm_logical_form(Sf, Opc, Imm, Rn, Rd) ->
-  N = Imm band (1 bsl 12),
-  Imms = Imm band (2#111111 bsl 6),
-  Immr = Imm band (2#111111),
+data_imm_logical_form(Sf, Opc, N, Imms, Immr, Rn, Rd) ->
   ?BIT(31,Sf) bor ?BF(30,29,Opc) bor ?BF(28,23,2#100100) bor ?BIT(22,N) bor ?BF(21,16,Immr) bor ?BF(15,10,Imms) bor ?BF(9,5,Rn) bor ?BF(4,0,Rd).
 
 data_reg_shift_logical_form(Sf, Opc, Shift, N, Rm, Imm6, Rn, Rd) ->
@@ -159,24 +156,26 @@ data_reg_shift_logical_form(Sf, Opc, Shift, N, Rm, Imm6, Rn, Rd) ->
 
 orr({{'cond', 'al'}, {s,_S}, {r,Dst}, {r,Opnd}, AmOpnd}) ->
   case AmOpnd of
-    {'immediate', {imm13, Imm13}} ->
-      data_imm_logical_form(1, 2#01, Imm13, Opnd, Dst);
+    {'bitmask', {n, N}, {imms, Imms}, {immr, Immr}} ->
+      data_imm_logical_form(1, 2#01, N, Imms, Immr, Opnd, Dst);
     {r, Register} ->
       data_reg_shift_logical_form(1, 2#01, 2#00, 0, Register, 2#000000, Opnd, Dst)
   end.
 
 'and'({{'cond', 'al'}, {s,_S}, {r,Dst}, {r,Opnd}, AmOpnd}) ->
   case AmOpnd of
-    {'immediate', {imm13, Imm13}} ->
-      data_imm_logical_form(1, 2#00, Imm13, Opnd, Dst);
+    {'bitmask', {n, N}, {imms, Imms}, {immr, Immr}} ->
+      data_imm_logical_form(1, 2#00, N, Imms, Immr, Opnd, Dst);
     {r, Register} ->
       data_reg_shift_logical_form(1, 2#00, 2#00, 0, Register, 2#000000, Opnd, Dst)
   end.
 
 tst({{'cond', 'al'}, {r, Opnd}, AmOpnd}) ->
   case AmOpnd of
-    {'immediate', {imm13, Imm13}} ->
-      data_imm_logical_form(1, 2#11, Imm13, Opnd, 31)
+    {'bitmask', {n, N}, {imms, Imms}, {immr, Immr}} ->
+      data_imm_logical_form(1, 2#11, N, Imms, Immr, Opnd, 31);
+    {r, Register} ->
+      data_reg_shift_logical_form(1, 2#11, 2#00, 0, Register, 2#000000, Opnd, 31)
   end.
 
 %%% Data Processing - Move
