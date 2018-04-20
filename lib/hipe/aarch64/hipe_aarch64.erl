@@ -350,7 +350,7 @@ invert_aluop_imm(AluOp, Imm) ->
   end.
 
 imm_to_bitmask(_Imm) ->
-  [].
+  []. % TODO
 
 %%% Create a 'shifter operand'.
 %%% Immediates on moves have to be 16 bits long, however
@@ -379,14 +379,14 @@ imm_to_am1(Imm, Size) ->
     [] -> [];
     {ShiftedImm, Shifts} -> {Size, ShiftedImm, Shifts}
   end.
-imm_to_am1(Imm, Size, MaxImm, RotCnt) ->
-  if Imm >= 0, Imm =< MaxImm -> {Imm, RotCnt band 3};
+imm_to_am1(Imm, Size, Mask, RotCnt) ->
+  if Imm >= 0, Imm =< Mask -> {Imm, RotCnt band 3};
      true ->
-      if (Imm band MaxImm) =/= 0 -> []; % Imm can't fit in single op
+      if (Imm band Mask) =/= 0 -> []; % Imm can't fit in single op
      true ->
       NewRotCnt = RotCnt + 1,
 	  NewImm = Imm bsr Size,
-	  imm_to_am1(NewImm, NewRotCnt, MaxImm, NewRotCnt)
+	  imm_to_am1(NewImm, Size, Mask, NewRotCnt)
       end
   end.
 
