@@ -63,6 +63,8 @@ insn_temps(T, I) ->
 -spec am1_temps(subst_fun(), am1()) -> am1().
 am1_temps(_SubstTemp, T={_S,C}) when is_integer(C) -> T;
 am1_temps(_SubstTemp, T={_S,C,R}) when is_integer(C), is_integer(R) -> T;
+am1_temps(_SubstTemp, T={bitmask,N,S,R})
+    when is_integer(N), is_integer(S), is_integer(R) -> T;
 am1_temps(SubstTemp, T=#aarch64_temp{}) -> SubstTemp(T).
 
 -spec am2_temps(subst_fun(), am2()) -> am2().

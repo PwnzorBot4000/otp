@@ -349,8 +349,76 @@ invert_aluop_imm(AluOp, Imm) ->
     'sub' -> {'add', -Imm}
   end.
 
-imm_to_bitmask(_Imm) ->
-  []. % TODO
+%%% Aarch64 has a special way to encode immediates for logical instructions, 
+%%% where a 13-bit pattern generator is used to create the actual immediate
+%%% during execution. The generation mechanism uses replication of a base
+%%% subpattern, created by filling part of it with ones and then rotating it
+%%% a number of positions. The metrics in the process are E, the size of the
+%%% pattern to be replicated (power of 2 up to 64), S, the number of ones in
+%%% the pattern (minus 1), and R, the rotation amount. The way those metrics
+%%% are encoded in the 13 bits of the bitmask is N:imms:immr (1:6:6), where
+%%% R = immr, S = imms with the unused bits (due to pattern size) set to 1,
+%%% and N denotes no replication (64-bit pattern).
+
+imm_to_bitmask(Imm) ->
+  case Imm of
+    % All-zeros and all-ones are invalid bitmask immediate cases.
+    0 -> [];
+    16#FFFFFFFFFFFFFFFF -> [];
+    _ -> imm_to_bitmask(Imm, 2)
+  end.
+imm_to_bitmask(Imm, Esize) when Esize =< 64 ->
+  Pattern = Imm band ones(Esize),
+  case replicates64(Pattern, Imm, Esize, Esize) of
+    false ->
+      imm_to_bitmask(Imm, Esize * 2);
+    true ->
+      Rones = countbits(1, Pattern, Esize),
+      Rzeros = countbits(0, Pattern bsr Rones, Esize - Rones),
+      R0 = Rzeros + Rones,
+      Sones = countbits(1, Pattern bsr R0, Esize - R0),
+      S = Sones + Rones - 1,
+      R = R0 rem Esize,
+      Generated = rol(ones(S + 1), R, Esize),
+      if (Generated == Pattern) ->
+          Imms = (S band (Esize - 1)) bor (ones(6) - (Esize - 1)),
+          N = if (Esize == 64) -> 1;
+            true -> 0
+          end,
+          {bitmask, N, Imms, R};
+        true -> []
+      end
+  end.
+
+%%% Return a binary number consisting of N 'one' bits.
+ones(N) -> (1 bsl N) - 1.
+
+%%% Binary rotate left.
+rol(Number, Positions, Size) ->
+  Shifted = (Number bsl Positions) band ones(Size),
+  Recycled = Number band (ones(Positions) bsl (Size - Positions)),
+  Shifted bor (Recycled bsr (Size - Positions)).
+
+%%% Test whether a pattern replicates inside
+%%% a 64-bit binary number.
+replicates64(_Pattern, _Number, _Size, Start) when Start >= 64 ->
+  64 = Start, % sanity check for misalignment
+  true;
+replicates64(Pattern, Number, Size, Start) ->
+  Mask = ones(Size) bsl Start,
+  if ((Mask band Number) bsr Start == Pattern) ->
+      replicates64(Pattern, Number, Size, Start + Size);
+    true -> false
+  end.
+
+%%% Count the consequent bits of a given Number that are
+%%% equal to Value, starting from the end.
+countbits(_Value, _Number, 0) -> 0;
+countbits(Value, Number, Length) ->
+  if (Number band 1 == Value) ->
+      1 + countbits(Value, Number bsr 1, Length - 1);
+    true -> 0
+  end.
 
 %%% Create a 'shifter operand'.
 %%% Immediates on moves have to be 16 bits long, however

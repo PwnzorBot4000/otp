@@ -149,7 +149,8 @@ fix_am1(Am1, TempMap, Strategy) ->
     #aarch64_temp{} ->
       fix_src2(Am1, TempMap, Strategy);
     {_Size,_Imm} -> {[], Am1, false};
-    {_Size,_Imm,_Shift} -> {[], Am1, false}
+    {_Size,_Imm,_Shift} -> {[], Am1, false};
+    {bitmask,_N,_Imms,_Immr} -> {[], Am1, false}
   end.
 
 fix_am2(Am2=#am2{src=Src2,offset=Offset}, TempMap, Strategy) ->

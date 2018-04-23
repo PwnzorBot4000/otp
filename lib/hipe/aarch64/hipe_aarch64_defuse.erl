@@ -119,6 +119,7 @@ am1_use(Am1, Set) ->
   case Am1 of
     {_Size,_Imm} -> Set;
     {_Size,_Imm,_Shift} -> Set;
+    {bitmask,_N,_Imms,_Immr} -> Set;
     #aarch64_temp{} -> addtemp(Am1, Set)
   end.
 
