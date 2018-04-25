@@ -39,10 +39,9 @@ ra(CFG0, Options) ->
 	  ra(CFG1, GPLiveness1, SpillIndex, Options,
 	     hipe_graph_coloring_regalloc);
 	linear_scan ->
-      exit("Regalloc option unimplemented"),
-	  hipe_arm_ra_ls:ra(CFG1, GPLiveness1, SpillIndex, Options);
+	  hipe_aarch64_ra_ls:ra(CFG1, GPLiveness1, SpillIndex, Options);
 	naive ->
-      exit("Regalloc option unimplemented"),
+      exit({"Regalloc option unimplemented", naive}),
 	  hipe_arm_ra_naive:ra(CFG1, GPLiveness1, Coloring_fp, Options);
         _ ->
 	  exit({unknown_regalloc_compiler_option,

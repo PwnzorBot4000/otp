@@ -56,6 +56,7 @@ MODULES=hipe_aarch64 \
 	hipe_aarch64_main \
 	hipe_aarch64_ra \
 	hipe_aarch64_ra_finalise \
+	hipe_aarch64_ra_ls \
 	hipe_aarch64_ra_postconditions \
 	hipe_aarch64_registers \
 	hipe_aarch64_subst \

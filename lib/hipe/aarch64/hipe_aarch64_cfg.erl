@@ -22,6 +22,7 @@
 -export([postorder/1]).
 -export([linearise/1]).
 -export([params/1, reverse_postorder/1]).
+-export([arity/1]). % for linear scan
 -export([branch_preds/1]).
 
 %%% these tell cfg.inc what to define (ugly as hell)
@@ -114,3 +115,7 @@ linearise(CFG) ->	% -> defun, not insn list
   IsLeaf = is_leaf(CFG),
   hipe_aarch64:mk_defun(MFA, Formals, IsClosure, IsLeaf,
             Code, Data, VarRange, LabelRange).
+
+arity(CFG) ->
+  {_M, _F, A} = function(CFG),
+  A.

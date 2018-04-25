@@ -25,6 +25,7 @@
     reverse_postorder/2,
     livein/3,
     non_alloc/2,
+    physical_name/2,
     bb/3,
     def_use/2,
     uses/2,
@@ -34,6 +35,10 @@
     is_spill_move/2,
     reg_nr/2
 	]).
+
+%% for hipe_ls_regalloc:
+-export([args/2, is_arg/2, is_global/2, new_spill_index/2]).
+-export([breadthorder/2, postorder/2]).
 
 %% callbacks for hipe_regalloc_prepass, hipe_range_split
 -export([mk_move/3,
@@ -58,7 +63,7 @@ reverse_postorder(CFG, _) ->
 non_alloc(CFG, no_context) ->
   non_alloc_1(hipe_aarch64_registers:nr_args(), hipe_aarch64_cfg:params(CFG)).
 
-%% same as hipe_arm_frame:fix_formals/2
+%% same as hipe_aarch64_frame:fix_formals/2
 non_alloc_1(0, Rest) -> Rest;
 non_alloc_1(N, [_|Rest]) -> non_alloc_1(N-1, Rest);
 non_alloc_1(_, []) -> [].
@@ -86,6 +91,9 @@ all_precoloured(no_context) ->
 
 is_precoloured(Reg, _) ->
   hipe_aarch64_registers:is_precoloured_gpr(Reg).
+
+physical_name(Reg, _) ->
+  Reg.
 
 %% CFG stuff
 
@@ -176,3 +184,26 @@ subst_temps(SubstFun, Instr, _) ->
 	  false -> Op
 	end
     end, Instr).
+
+%%% Linear Scan stuff
+
+new_spill_index(SpillIndex, _) when is_integer(SpillIndex) ->
+  SpillIndex+1.
+
+breadthorder(CFG, _) ->
+  hipe_aarch64_cfg:breadthorder(CFG).
+
+postorder(CFG, _) ->
+  hipe_aarch64_cfg:postorder(CFG).
+
+is_global(R, _) ->
+  R =:= hipe_aarch64_registers:temp1() orelse
+  R =:= hipe_aarch64_registers:temp2() orelse
+  R =:= hipe_aarch64_registers:temp3() orelse
+  hipe_aarch64_registers:is_fixed(R).
+
+is_arg(R, _) ->
+  hipe_aarch64_registers:is_arg(R).
+
+args(CFG, _) ->
+  hipe_aarch64_registers:args(hipe_aarch64_cfg:arity(CFG)).

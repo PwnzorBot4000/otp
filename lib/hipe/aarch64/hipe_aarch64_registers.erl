@@ -26,9 +26,11 @@
 	 proc_pointer/0,
 	 lr/0,
      allocatable_gpr/0,
+	 is_fixed/1,	% for graph coloring
 	 nr_args/0,
 	 arg/1,
 	 args/1,
+	 is_arg/1,	% for linear scan
      call_clobbered/0,
      tailcall_clobbered/0,
 	 live_at_return/0
@@ -123,12 +125,28 @@ lr() -> ?LR.
 
 allocatable_gpr() ->
   %% x26, x27, and x28 are fixed global registers.
-  %% TODO? r12 may be used by the frame module for large load/store offsets.
+  %% x29 may be used by the frame module for large load/store offsets. (XXX)
   %% SP is reserved for C.
   [ ?X0,  ?X1,  ?X2,  ?X3,  ?X4,  ?X5,  ?X6,  ?X7,
     ?X8,  ?X9,  ?X10, ?X11, ?X12, ?X13, ?X14, ?X15,
     ?X16,  ?X17, ?X18, ?X19, ?X20, ?X21, ?X22, ?X23,
-    ?X24,  ?X25,                   ?X29, ?X30    ].
+    ?X24,  ?X25,                         ?X30    ].
+
+%% Needed for hipe_graph_coloring_regalloc.
+%% Presumably true for Reg in AllPrecoloured \ Allocatable.
+is_fixed(Reg) ->
+  case Reg of
+    ?HEAP_POINTER -> true;
+    ?STACK_POINTER -> true;
+    ?PROC_POINTER -> true;
+    %% The following cases are required for linear scan:
+    %% it gets confused if it sees a register which is
+    %% neither allocatable nor global (fixed or one of
+    %% the scratch registers set aside for linear scan).
+    ?SP -> true; % XXX: see all_precoloured()
+    ?X29 -> true;
+    _ -> false
+  end.
 
 nr_args() -> ?AARCH64_NR_ARG_REGS.
 
@@ -152,6 +170,17 @@ arg(N) ->
       end;
      true ->
       exit({?MODULE, arg, N})
+  end.
+
+is_arg(R) ->
+  case R of
+    ?ARG0 -> ?AARCH64_NR_ARG_REGS > 0;
+    ?ARG1 -> ?AARCH64_NR_ARG_REGS > 1;
+    ?ARG2 -> ?AARCH64_NR_ARG_REGS > 2;
+    ?ARG3 -> ?AARCH64_NR_ARG_REGS > 3;
+    ?ARG4 -> ?AARCH64_NR_ARG_REGS > 4;
+    ?ARG5 -> ?AARCH64_NR_ARG_REGS > 5;
+    _ -> false
   end.
 
 %% Note: the fact that allocatable_gpr() is a subset of call_clobbered() is
