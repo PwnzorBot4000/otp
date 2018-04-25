@@ -46,6 +46,8 @@
 
      mk_sdesc/4,
 
+     mk_am2/2,
+
 	 mk_label/1,
 	 is_label/1,
 	 label_label/1,
@@ -128,6 +130,8 @@ mk_mfa(M, F, A) -> #aarch64_mfa{m=M, f=F, a=A}.
 mk_prim(Prim) -> #aarch64_prim{prim=Prim}.
 is_prim(X) -> case X of #aarch64_prim{} -> true; _ -> false end.
 prim_prim(#aarch64_prim{prim=Prim}) -> Prim.
+
+mk_am2(Src, Offset) -> #am2{src=Src, offset=Offset}.
 
 mk_alu(AluOp, S, Dst, Src, Am1) ->
   #alu{aluop=AluOp, s=S, dst=Dst, src=Src, am1=Am1}.

@@ -424,8 +424,9 @@ mk_load_ii(_Dst, _Base1, _Base2, _LdOp) ->
 mk_load_ri(Dst, Base, Offset, LdOp) ->
   hipe_aarch64:mk_load(LdOp, Dst, Base, Offset, 'new', []).
 
-mk_load_rr(_Dst, _Base1, _Base2, _LdOp) ->
-  throw("unimplemented").
+mk_load_rr(Dst, Base1, Base2, LdOp) ->
+  Am2 = hipe_aarch64:mk_am2(Base1, Base2),
+  [hipe_aarch64:mk_load(LdOp, Dst, Am2)].
 
 mk_ldrsb_ii(_Dst, _Base1, _Base2) ->
   throw("unimplemented").
