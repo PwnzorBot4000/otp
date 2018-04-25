@@ -53,6 +53,7 @@ insn_temps(T, I) ->
       #label{} -> I;
       #pseudo_bc{} -> I;
       #pseudo_blr{} -> I;
+      #pseudo_call{funv=F} -> I#pseudo_call{funv=funv_temps(T, F)};
       #pseudo_call_prepare{} -> I;
       #pseudo_li{dst=D} -> I#pseudo_li{dst=T(D)};
       #pseudo_tailcall{funv=F,stkargs=Stk} ->
@@ -80,6 +81,7 @@ am2_temps(SubstTemp, T=#am2{src=A=#aarch64_temp{},offset=O0}) ->
 
 -spec funv_temps(subst_fun(), funv()) -> funv().
 funv_temps(_SubstTemp, M=#aarch64_mfa{}) -> M;
+funv_temps(_SubstTemp, P=#aarch64_prim{}) -> P;
 funv_temps(SubstTemp,  T=#aarch64_temp{}) -> SubstTemp(T).
 
 -spec arg_temps(subst_fun(), arg()) -> arg().
