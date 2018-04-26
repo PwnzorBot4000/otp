@@ -118,11 +118,11 @@ cmn({{'cond', 'al'}, Opnd, AmOpnd}) ->
 data_imm_bitfield_form(Sf, Opc, N, Immr, Imms, Rn, Rd) ->
   ?BIT(31,Sf) bor ?BF(30,29,Opc) bor ?BF(28,23,2#100110) bor ?BIT(22,N) bor ?BF(21,16,Immr) bor ?BF(15,10,Imms) bor ?BF(9,5,Rn) bor ?BF(4,0,Rd).
 
-sbfm({r,Dst}, {r,Src}, Shift, Move) ->
-  data_imm_bitfield_form(1, 2#00, 1, Shift, Move, Src, Dst).
+sbfm({r,Dst}, {r,Src}, Immr, Imms) ->
+  data_imm_bitfield_form(1, 2#00, 1, Immr, Imms, Src, Dst).
 
-ubfm({r,Dst}, {r,Src}, Rotate, Move) ->
-  data_imm_bitfield_form(1, 2#10, 1, Rotate, Move, Src, Dst).
+ubfm({r,Dst}, {r,Src}, Immr, Imms) ->
+  data_imm_bitfield_form(1, 2#10, 1, Immr, Imms, Src, Dst).
 
 asr({{'cond', 'al'}, _S, Dst, Src, Shift}) ->
   case Shift of
@@ -133,7 +133,7 @@ asr({{'cond', 'al'}, _S, Dst, Src, Shift}) ->
 lsl({{'cond', 'al'}, _S, Dst, Src, Shift}) ->
   case Shift of
     {'immediate', {imm6, Imm6}} when Imm6 =/= 0 ->
-      ubfm(Dst, Src, Imm6, Imm6 - 1);
+      ubfm(Dst, Src, 64 - Imm6, 63 - Imm6);
     {r, Rm} ->
       {r, Rn} = Src,
       {r, Rd} = Dst,
