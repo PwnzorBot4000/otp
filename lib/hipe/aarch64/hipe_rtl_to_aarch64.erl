@@ -639,8 +639,12 @@ move_formals([], Rest) ->
 
 conv_fun(Fun, Map) ->
   case hipe_rtl:is_var(Fun) of
+    true ->
+      conv_dst(Fun, Map);
     false ->
       case hipe_rtl:is_reg(Fun) of
+	true ->
+	  conv_dst(Fun, Map);
     false ->
       if is_atom(Fun) ->
 	      {hipe_aarch64:mk_prim(Fun), Map};

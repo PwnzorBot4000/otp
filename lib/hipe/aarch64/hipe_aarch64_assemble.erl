@@ -210,7 +210,7 @@ translate_insn(I) ->	% -> [{Op,Opnd,OrigI}]
     #b_fun{} -> do_b_fun(I);
     #b_label{} -> do_b_label(I);
     #bl{} -> do_bl(I);
-    %#blx{} -> do_blx(I);
+    #blx{} -> do_blx(I);
     #cmp{} -> do_cmp(I);
     #comment{} -> [];
     #label{} -> do_label(I);
@@ -219,6 +219,7 @@ translate_insn(I) ->	% -> [{Op,Opnd,OrigI}]
     #move{} -> do_move(I);
     %% pseudo_b: eliminated by finalise
     #pseudo_blr{} -> do_pseudo_blr(I);
+    #pseudo_bx{} -> do_pseudo_bx(I);
     %% pseudo_call: eliminated by finalise
     %% pseudo_call_prepare: eliminated by frame
     %% pseudo_li: handled separately
@@ -255,6 +256,11 @@ do_bl(I) ->
    {bl, {do_cond('al'),{imm26,0}}, I},
    {'.reloc', {sdesc,SDesc}, #comment{term=sdesc}}].
 
+do_blx(I) ->
+  #blx{src=Src,sdesc=SDesc} = I,
+  [{blx, {do_cond('al'),do_reg(Src)}, I},
+   {'.reloc', {sdesc,SDesc}, #comment{term=sdesc}}].
+
 do_cmp(I) ->
   #cmp{cmpop=CmpOp,src=Src,am1=Am1} = I,
   NewCond = do_cond('al'),
@@ -275,6 +281,11 @@ do_load(I) ->
 
 do_pseudo_blr(I) ->
   [{'ret', 'none', I}].
+
+do_pseudo_bx(I) ->
+  #pseudo_bx{src=Src} = I,
+  NewSrc = do_reg(Src),
+  [{br, NewSrc, I}].
 
 do_move(I) ->
   #move{movop=MovOp,s=S,dst=Dst,am1=Am1} = I,

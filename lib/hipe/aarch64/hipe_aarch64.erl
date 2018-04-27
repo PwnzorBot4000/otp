@@ -29,6 +29,7 @@
 	 is_prim/1,
      prim_prim/1,
 
+	 mk_alu/4,
 	 mk_alu/5,
 
      mk_b_fun/2,

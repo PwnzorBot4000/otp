@@ -65,6 +65,7 @@ branch_successors(Branch) ->
     #b_label{'cond'='al',label=Label} -> [Label];
     #pseudo_bc{true_label=TrueLab,false_label=FalseLab} -> [FalseLab,TrueLab];
     #pseudo_blr{} -> [];
+    #pseudo_bx{} -> [];
     #pseudo_call{contlab=ContLab, sdesc=#aarch64_sdesc{exnlab=ExnLab}} ->
       case ExnLab of
 	[] -> [ContLab];
