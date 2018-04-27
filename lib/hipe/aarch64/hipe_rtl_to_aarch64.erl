@@ -525,14 +525,17 @@ mk_store2(Src, Base, Offset, StOp) ->
       end
   end.
 
-mk_store_ii(_Src, _Base, _Offset, _StOp) ->
-  throw("unimplemented").
+mk_store_ii(Src, Base, Offset, StOp) ->
+  Tmp = new_untagged_temp(),
+  mk_li(Tmp, Base,
+	mk_store_ri(Src, Tmp, Offset, StOp)).
 
 mk_store_ri(Src, Base, Offset, StOp) ->
   hipe_aarch64:mk_store(StOp, Src, Base, Offset, 'new', []).
    
-mk_store_rr(_Src, _Base, _Index, _StOp) ->
-  throw("unimplemented").
+mk_store_rr(Src, Base, Index, StOp) ->
+  Am2 = hipe_aarch64:mk_am2(Base, Index),
+  [hipe_aarch64:mk_store(StOp, Src, Am2)].
 
 %%% Create a conditional branch.
 
