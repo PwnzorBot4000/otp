@@ -149,7 +149,9 @@ mk_alu_ir(S, Dst, Src1, AluOp, Src2) ->
 mk_alu_ri(S, Dst, Src1, AluOp, Src2) ->
   case AluOp of
     'mul' -> % mul/smull only take reg/reg operands
-      throw("unimplemented");
+      Tmp = new_untagged_temp(),
+      mk_li(Tmp, Src2,
+	    mk_alu_rr(S, Dst, Src1, AluOp, Tmp));
     _ -> % add/sub/orr/and/eor have reg/am1 operands
       {FixAm1,NewAluOp,Am1} = fix_aluop_imm(AluOp, Src2),
       FixAm1 ++ [hipe_aarch64:mk_alu(NewAluOp, S, Dst, Src1, Am1)]
@@ -158,7 +160,18 @@ mk_alu_ri(S, Dst, Src1, AluOp, Src2) ->
 mk_alu_rr(S, Dst, Src1, AluOp, Src2) ->
   case {AluOp,S} of
     {'mul',true} ->
-      throw("unimplemented");
+      %% To check for overflow in 64x64->64 multiplication:
+      %% smull Dst,Src1,Src2
+      %% smulh TmpHi,Src1,Src2
+      %% asr TmpSign, Dst, #31
+      %% cmp TmpSign,TmpHi
+      %% [bne OverflowLabel]
+      TmpHi = new_untagged_temp(),
+      TmpSign = new_untagged_temp(),
+      [hipe_aarch64:mk_alu('smull', Dst, Src1, Src2),
+       hipe_aarch64:mk_alu('smulh', TmpHi, Src1, Src2),
+       hipe_aarch64:mk_alu('asr', TmpSign, Dst, {imm6, 31}),
+       hipe_aarch64:mk_cmp('cmp', TmpSign, TmpHi)];
     _ ->
       [hipe_aarch64:mk_alu(AluOp, S, Dst, Src1, Src2)]
   end.
