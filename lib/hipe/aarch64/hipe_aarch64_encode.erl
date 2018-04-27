@@ -240,7 +240,9 @@ ldr({{'cond', 'al'}, {r, Dst}, Src}) ->
 str({{'cond', 'al'}, {r, Src}, Dst}) ->
   case Dst of
     {'immediate_offset', {r, Base}, {imm12, Offset}} ->
-      ldstr_imm_form(2#11, 2#0, 2#00, Offset, Base, Src)
+      ldstr_imm_form(2#11, 2#0, 2#00, Offset, Base, Src);
+    {'unscaled_offset', {r, Base}, {imm9, Offset}} ->
+      ldstr_unscaled_form(2#11, 2#0, 2#00, Offset, Base, Src)
   end.
 
 %%% Branches
