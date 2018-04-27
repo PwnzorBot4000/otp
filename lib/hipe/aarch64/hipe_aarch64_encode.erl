@@ -197,6 +197,20 @@ mvn({{'cond', 'al'}, {s,0}, {r, Dst}, Src}) ->
       data_imm_mov_form(1, 2#00, Imm2, Imm16, Dst)
   end.
 
+%%% Data Processing - Multiply
+
+data_reg_3src_form(Sf, Op54, Op31, Rm, O0, Ra, Rn, Rd) ->
+  ?BIT(31,Sf) bor ?BF(30,29,Op54) bor ?BF(28,24,2#11011) bor ?BF(23,21,Op31) bor ?BF(20,16,Rm) bor ?BIT(15,O0) bor ?BF(14,10,Ra) bor ?BF(9,5,Rn) bor ?BF(4,0, Rd).
+
+smaddl(Dst, Src1, Src2, SrcAdd) ->
+  data_reg_3src_form(1, 2#00, 2#001, Src1, 0, SrcAdd, Src2, Dst).
+
+smull({{'cond', 'al'}, {s,0}, {r, Dst}, {r, Src1}, {r, Src2}}) ->
+  smaddl(Dst, Src1, Src2, 31).
+
+smulh({{'cond', 'al'}, {s,0}, {r, Dst}, {r, Src1}, {r, Src2}}) ->
+  data_reg_3src_form(1, 2#00, 2#010, Src1, 0, 31, Src2, Dst).
+
 %%% Loads / Stores
 
 ldstr_imm_form(Size, V, Opc, Imm12, Rn, Rt) ->
@@ -271,6 +285,8 @@ insn_encode(Op, Opnds) ->
     'mvn' -> mvn(Opnds);
     'orr' -> orr(Opnds);
     'ret' -> ret(Opnds);
+    'smulh' -> smulh(Opnds);
+    'smull' -> smull(Opnds);
     'str' -> str(Opnds);
     'sub' -> sub(Opnds);
     'tst' -> tst(Opnds);
