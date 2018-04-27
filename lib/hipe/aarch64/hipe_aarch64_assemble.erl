@@ -258,7 +258,7 @@ do_bl(I) ->
 
 do_blx(I) ->
   #blx{src=Src,sdesc=SDesc} = I,
-  [{blx, {do_cond('al'),do_reg(Src)}, I},
+  [{blr, {do_cond('al'),do_reg(Src)}, I},
    {'.reloc', {sdesc,SDesc}, #comment{term=sdesc}}].
 
 do_cmp(I) ->

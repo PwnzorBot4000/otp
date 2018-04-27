@@ -264,6 +264,12 @@ b({{'cond', Cond}, {imm19, Offset}}) ->
 bl({{'cond', 'al'}, {imm26, Offset}}) ->
   b_imm_form(1, Offset).
 
+br({r, Dst}) ->
+  b_reg_form(2#0000, 2#11111, 2#000000, Dst, 2#00000).
+
+blr({{'cond', 'al'}, {r, Dst}}) ->
+  b_reg_form(2#0001, 2#11111, 2#000000, Dst, 2#00000).
+
 ret(_Opnds) ->
   b_reg_form(2#0010, 2#11111, 2#000000, 30, 2#00000).
 
@@ -278,6 +284,8 @@ insn_encode(Op, Opnds) ->
     'asr' -> asr(Opnds);
     'b'   -> b(Opnds);
     'bl'  -> bl(Opnds);
+    'blr' -> blr(Opnds);
+    'br'  -> br(Opnds);
     'cmp' -> cmp(Opnds);
     'cmn' -> cmn(Opnds);
     'ldr' -> ldr(Opnds);
