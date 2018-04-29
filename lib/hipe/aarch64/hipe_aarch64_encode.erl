@@ -225,24 +225,24 @@ ldstr_reg_form(Size, V, Opc, Rm, Option, S, Rn, Rt) ->
 ldstr_pcrel_form(Opc, V, Imm19, Rt) ->
   ?BF(31,30,Opc) bor ?BF(29,27,2#011) bor ?BIT(26,V) bor ?BF(25,24,2#00) bor ?BFS(23,5,Imm19) bor ?BF(4,0,Rt).
 
-ldr({{'cond', 'al'}, {r, Dst}, Src}) ->
+ldr({Size, {r, Dst}, Src}) ->
   case Src of
     {'immediate_offset', {r, Base}, {imm12, Offset}} ->
-      ldstr_imm_form(2#11, 2#0, 2#01, Offset, Base, Dst);
+      ldstr_imm_form(Size, 2#0, 2#01, Offset, Base, Dst);
     {'unscaled_offset', {r, Base}, {imm9, Offset}} ->
-      ldstr_unscaled_form(2#11, 2#0, 2#01, Offset, Base, Dst);
+      ldstr_unscaled_form(Size, 2#0, 2#01, Offset, Base, Dst);
     {'register_offset', {r, Base}, {r, Offset}} ->
-      ldstr_reg_form(2#11, 2#0, 2#01, Offset, 2#011, 0, Base, Dst);
+      ldstr_reg_form(Size, 2#0, 2#01, Offset, 2#011, 0, Base, Dst);
     {'pc-relative', {imm19, Offset}} ->
       ldstr_pcrel_form(2#01, 2#0, Offset, Dst)
   end.
 
-str({{'cond', 'al'}, {r, Src}, Dst}) ->
+str({Size, {r, Src}, Dst}) ->
   case Dst of
     {'immediate_offset', {r, Base}, {imm12, Offset}} ->
-      ldstr_imm_form(2#11, 2#0, 2#00, Offset, Base, Src);
+      ldstr_imm_form(Size, 2#0, 2#00, Offset, Base, Src);
     {'unscaled_offset', {r, Base}, {imm9, Offset}} ->
-      ldstr_unscaled_form(2#11, 2#0, 2#00, Offset, Base, Src)
+      ldstr_unscaled_form(Size, 2#0, 2#00, Offset, Base, Src)
   end.
 
 %%% Branches

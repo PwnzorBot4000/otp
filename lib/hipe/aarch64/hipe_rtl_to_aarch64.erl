@@ -410,7 +410,7 @@ mk_load(Dst, Base1, Base2, LoadSize, LoadSign) ->
       LdOp =
 	case LoadSize of
 	  byte -> 'ldrb';
-	  int32 -> 'ldr';
+	  int32 -> 'ldr32';
 	  word -> 'ldr'
 	end,
       case hipe_aarch64:is_temp(Base1) of
@@ -495,7 +495,7 @@ mk_store(Src, Base, Offset, StoreSize) ->
   StOp =
     case StoreSize of
       byte -> 'strb';
-      int32 -> 'str';
+      int32 -> 'str32';
       word -> 'str'
     end,
   case hipe_aarch64:is_temp(Src) of

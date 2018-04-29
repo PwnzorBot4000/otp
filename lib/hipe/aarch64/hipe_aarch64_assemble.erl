@@ -274,10 +274,13 @@ do_label(I) ->
 
 do_load(I) ->
   #load{ldop=LdOp,dst=Dst,am2=Am2} = I,
-  NewCond = do_cond('al'),
   NewDst = do_reg(Dst),
   NewAm2 = do_am2(Am2),
-  [{LdOp, {NewCond,NewDst,NewAm2}, I}].
+  {NewLdOp, Size} = case LdOp of
+    ldr32 -> {'ldr', 2#10};
+    _ -> {LdOp, 2#11}
+  end,
+  [{NewLdOp, {Size,NewDst,NewAm2}, I}].
 
 do_pseudo_blr(I) ->
   [{'ret', 'none', I}].
@@ -333,10 +336,13 @@ do_pseudo_li(I, MFA, ConstMap, Address, PrevImms, PendImms) ->
 
 do_store(I) ->
   #store{stop=StOp,src=Src,am2=Am2} = I,
-  NewCond = do_cond('al'),
   NewSrc = do_reg(Src),
   NewAm2 = do_am2(Am2),
-  [{StOp, {NewCond,NewSrc,NewAm2}, I}].
+  {NewStOp, Size} = case StOp of
+    str32 -> {'str', 2#10};
+    _ -> {StOp, 2#11}
+  end,
+  [{NewStOp, {Size,NewSrc,NewAm2}, I}].
 
 do_reg(#aarch64_temp{reg=Reg,type=Type})
   when is_integer(Reg), 0 =< Reg, Reg < 32, Type =/= 'double' ->
