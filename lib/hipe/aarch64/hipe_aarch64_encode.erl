@@ -118,6 +118,9 @@ cmn({{'cond', 'al'}, Opnd, AmOpnd}) ->
 data_imm_bitfield_form(Sf, Opc, N, Immr, Imms, Rn, Rd) ->
   ?BIT(31,Sf) bor ?BF(30,29,Opc) bor ?BF(28,23,2#100110) bor ?BIT(22,N) bor ?BF(21,16,Immr) bor ?BF(15,10,Imms) bor ?BF(9,5,Rn) bor ?BF(4,0,Rd).
 
+data_reg_2src_form(Sf, S, Rm, Opcode, Rn, Rd) ->
+  ?BIT(31,Sf) bor ?BIT(30,0) bor ?BIT(29,S) bor ?BF(28,21,2#11010110) bor ?BF(20,16,Rm) bor ?BF(15,10,Opcode) bor ?BF(9,5,Rn) bor ?BF(4,0,Rd).
+
 sbfm({r,Dst}, {r,Src}, Immr, Imms) ->
   data_imm_bitfield_form(1, 2#00, 1, Immr, Imms, Src, Dst).
 
@@ -137,13 +140,17 @@ lsl({{'cond', 'al'}, _S, Dst, Src, Shift}) ->
     {r, Rm} ->
       {r, Rn} = Src,
       {r, Rd} = Dst,
-      ?BIT(31,1) bor ?BF(30,21,2#0011010110) bor ?BF(9,5,Rm) bor ?BF(15,10,2#001000) bor ?BF(9,5,Rn) bor ?BF(4,0,Rd)
+      data_reg_2src_form(1, 0, Rm, 2#001000, Rn, Rd)
   end.
 
 lsr({{'cond', 'al'}, _S, Dst, Src, Shift}) ->
   case Shift of
     {'immediate', {imm6, Imm6}} when Imm6 =/= 0 ->
-      ubfm(Dst, Src, Imm6, 63)
+      ubfm(Dst, Src, Imm6, 63);
+    {r, Rm} ->
+      {r, Rn} = Src,
+      {r, Rd} = Dst,
+      data_reg_2src_form(1, 0, Rm, 2#001001, Rn, Rd)
   end.
 
 %%% Data Processing - Logical
@@ -237,13 +244,21 @@ ldr({Size, {r, Dst}, Src}) ->
       ldstr_pcrel_form(2#01, 2#0, Offset, Dst)
   end.
 
+ldrb({_Size, Dst, Src}) ->
+  ldr({2#00, Dst, Src}).
+
 str({Size, {r, Src}, Dst}) ->
   case Dst of
     {'immediate_offset', {r, Base}, {imm12, Offset}} ->
       ldstr_imm_form(Size, 2#0, 2#00, Offset, Base, Src);
     {'unscaled_offset', {r, Base}, {imm9, Offset}} ->
-      ldstr_unscaled_form(Size, 2#0, 2#00, Offset, Base, Src)
+      ldstr_unscaled_form(Size, 2#0, 2#00, Offset, Base, Src);
+    {'register_offset', {r, Base}, {r, Offset}} ->
+      ldstr_reg_form(Size, 2#0, 2#00, Offset, 2#011, 0, Base, Src)
   end.
+
+strb({_Size, Src, Dst}) ->
+  str({2#00, Src, Dst}).
 
 %%% Branches
 
@@ -289,6 +304,7 @@ insn_encode(Op, Opnds) ->
     'cmp' -> cmp(Opnds);
     'cmn' -> cmn(Opnds);
     'ldr' -> ldr(Opnds);
+    'ldrb' -> ldrb(Opnds);
     'lsl' -> lsl(Opnds);
     'lsr' -> lsr(Opnds);
     'mov' -> mov(Opnds);
@@ -298,6 +314,7 @@ insn_encode(Op, Opnds) ->
     'smulh' -> smulh(Opnds);
     'smull' -> smull(Opnds);
     'str' -> str(Opnds);
+    'strb' -> strb(Opnds);
     'sub' -> sub(Opnds);
     'tst' -> tst(Opnds);
     _ -> exit({?MODULE,insn_encode,Op})
