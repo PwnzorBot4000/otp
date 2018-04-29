@@ -33,6 +33,9 @@ expand_list([I|Insns], Accum) ->
 expand_list([], Accum) ->
   Accum.
 
+%%% Expand pseudos to their actual instructions.
+%%% Care! Instruction order is reversed
+
 expand_insn(I, Accum) ->
   case I of
     #pseudo_bc{'cond'=Cond,true_label=TrueLab,false_label=FalseLab} ->
@@ -48,8 +51,10 @@ expand_insn(I, Accum) ->
 	 _ -> hipe_aarch64:mk_bl(FunV, SDesc, Linkage)
        end |
        Accum];
-    #pseudo_switch{} ->
-      throw(unimplemented);
+    #pseudo_switch{jtab=JTab,index=Index} ->
+      Am2 = hipe_aarch64:mk_am2(JTab, {Index, words}),
+      [hipe_aarch64:mk_bx(JTab),
+       hipe_aarch64:mk_load('ldr', JTab, Am2) | Accum];
     #pseudo_tailcall_prepare{} ->
       Accum;
     _ ->

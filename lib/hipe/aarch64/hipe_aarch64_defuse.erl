@@ -45,6 +45,7 @@ insn_def_gpr(I) ->
     #pseudo_bc{} -> [];
     #pseudo_blr{} -> [];
     #pseudo_call_prepare{} -> [];
+    #pseudo_switch{} -> [];
     #b_label{} -> [];
     #cmp{} -> [];
     #comment{} -> [];
@@ -82,6 +83,7 @@ insn_use_gpr(I) ->
       funv_use(FunV, arity_use_gpr(Arity));
     #pseudo_move{src=Src} -> [Src];
     #pseudo_spill_move{src=Src} -> [Src];
+    #pseudo_switch{jtab=JTabR,index=IndexR} -> addtemp(JTabR, [IndexR]);
     #pseudo_tailcall{funv=FunV,arity=Arity,stkargs=StkArgs} ->
       addargs(StkArgs, addtemps(tailcall_clobbered_gpr(), funv_use(FunV, arity_use_gpr(Arity))));
     #store{src=Src,am2=Am2} -> am2_use(Am2, [Src]);

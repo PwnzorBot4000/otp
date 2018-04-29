@@ -44,6 +44,7 @@ ra_insn_1(I, Map) ->
     #pseudo_call{} -> ra_pseudo_call(I, Map);
     #pseudo_li{} -> ra_pseudo_li(I, Map);
     #pseudo_spill_move{} -> ra_pseudo_spill_move(I, Map);
+    #pseudo_switch{} -> ra_pseudo_switch(I, Map);
     #pseudo_tailcall{} -> ra_pseudo_tailcall(I, Map);
     #store{} -> ra_store(I, Map);
     #pseudo_blr{} -> I;
@@ -89,6 +90,11 @@ ra_pseudo_spill_move(I=#pseudo_spill_move{dst=Dst,temp=Temp,src=Src}, Map) ->
   NewTemp = ra_temp(Temp, Map),
   NewSrc = ra_temp(Src, Map),
   I#pseudo_spill_move{dst=NewDst, temp=NewTemp, src=NewSrc}.
+
+ra_pseudo_switch(I=#pseudo_switch{jtab=JTab,index=Index}, Map) ->
+  NewJTab = ra_temp(JTab, Map),
+  NewIndex = ra_temp(Index, Map),
+  I#pseudo_switch{jtab=NewJTab,index=NewIndex}.
 
 ra_pseudo_tailcall(I=#pseudo_tailcall{funv=FunV,stkargs=StkArgs}, Map) ->
   NewFunV = ra_funv(FunV, Map),

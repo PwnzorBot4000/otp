@@ -71,6 +71,7 @@ branch_successors(Branch) ->
 	[] -> [ContLab];
 	_ -> [ContLab,ExnLab]
       end;
+    #pseudo_switch{labels=Labels} -> Labels;
     #pseudo_tailcall{} -> []
   end.
 
@@ -84,8 +85,9 @@ branch_preds(Branch) ->
     #pseudo_call{contlab=ContLab, sdesc=#aarch64_sdesc{exnlab=ExnLab}} ->
       CallExnPred = hipe_bb_weights:call_exn_pred(),
       [{ContLab, 1.0-CallExnPred}, {ExnLab, CallExnPred}];
-    #pseudo_switch{labels=_Labels} ->
-      throw(unimplemented);
+    #pseudo_switch{labels=Labels} ->
+      Prob = 1.0/length(Labels),
+      [{L, Prob} || L <- Labels];
     _ ->
       case branch_successors(Branch) of
 	[] -> [];

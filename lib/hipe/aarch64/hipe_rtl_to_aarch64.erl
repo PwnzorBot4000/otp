@@ -66,6 +66,7 @@ conv_insn(I, Map, Data) ->
     #move{} -> conv_move(I, Map, Data);
     #return{} -> conv_return(I, Map, Data);
     #store{} -> conv_store(I, Map, Data);
+    #switch{} -> conv_switch(I, Map, Data);
     _ -> exit({?MODULE,conv_insn,I})
   end.
 
@@ -536,6 +537,25 @@ mk_store_ri(Src, Base, Offset, StOp) ->
 mk_store_rr(Src, Base, Index, StOp) ->
   Am2 = hipe_aarch64:mk_am2(Base, Index),
   [hipe_aarch64:mk_store(StOp, Src, Am2)].
+
+conv_switch(I, Map, Data) ->
+  Labels = hipe_rtl:switch_labels(I),
+  LMap = [{label,L} || L <- Labels],
+  {NewData, JTabLab} =
+    case hipe_rtl:switch_sort_order(I) of
+      [] ->
+	hipe_consttab:insert_block(Data, word, LMap);
+      SortOrder ->
+	hipe_consttab:insert_sorted_block(
+	  Data, word, LMap, SortOrder)
+    end,
+  %% no immediates allowed here
+  {IndexR, Map1} = conv_dst(hipe_rtl:switch_src(I), Map),
+  JTabR = new_untagged_temp(),
+  I2 =
+    [hipe_aarch64:mk_pseudo_li(JTabR, {JTabLab,constant}),
+     hipe_aarch64:mk_pseudo_switch(JTabR, IndexR, Labels)],
+  {I2, Map1, NewData}.
 
 %%% Create a conditional branch.
 

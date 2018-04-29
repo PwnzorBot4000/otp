@@ -78,6 +78,8 @@
 
      is_pseudo_spill_move/1,
 
+	 mk_pseudo_switch/3,
+
      mk_pseudo_tailcall/4,
 	 pseudo_tailcall_funv/1,
 	 pseudo_tailcall_stkargs/1,
@@ -239,6 +241,9 @@ pseudo_move_dst(#pseudo_move{dst=Dst}) -> Dst.
 pseudo_move_src(#pseudo_move{src=Src}) -> Src.
 
 is_pseudo_spill_move(I) -> is_record(I, pseudo_spill_move).
+
+mk_pseudo_switch(JTab, Index, Labels) ->
+  #pseudo_switch{jtab=JTab, index=Index, labels=Labels}.
 
 mk_pseudo_tailcall(FunV, Arity, StkArgs, Linkage) ->
   #pseudo_tailcall{funv=FunV, arity=Arity, stkargs=StkArgs, linkage=Linkage}.

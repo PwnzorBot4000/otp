@@ -367,7 +367,10 @@ do_am1(Am1) ->
 do_am2(#am2{src=Src,offset=Offset}) ->
   NewSrc = do_reg(Src),
   case Offset of
-    #aarch64_temp{} -> {'register_offset', NewSrc, do_reg(Offset)};
+    #aarch64_temp{} ->
+      {'register_offset', NewSrc, do_reg(Offset), {shift, 0}};
+    {#aarch64_temp{} = Index, words} ->
+      {'register_offset', NewSrc, do_reg(Index), {shift, 1}};
     Imm when (Imm band 2#111) == 0 ->
       {'immediate_offset', NewSrc, {imm12, Imm bsr 3}};
     Imm ->

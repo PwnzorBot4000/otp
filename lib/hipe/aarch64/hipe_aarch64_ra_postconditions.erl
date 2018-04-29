@@ -56,6 +56,7 @@ do_insn(I, TempMap, Strategy) ->
     #pseudo_li{} -> do_pseudo_li(I, TempMap, Strategy);
     #pseudo_move{} -> do_pseudo_move(I, TempMap, Strategy);
     #pseudo_spill_move{} -> do_pseudo_spill_move(I, TempMap, Strategy);
+    #pseudo_switch{} -> do_pseudo_switch(I, TempMap, Strategy);
     #pseudo_tailcall{} -> do_pseudo_tailcall(I, TempMap, Strategy);
     #store{} -> do_store(I, TempMap, Strategy);
     #pseudo_bc{} -> {[I], false};
@@ -124,6 +125,12 @@ do_pseudo_spill_move(I = #pseudo_spill_move{temp=Temp}, TempMap, _Strategy) ->
   %% Temp is above the low water mark and must not have been spilled
   false = temp_is_spilled(Temp, TempMap),
   {[I], false}. % nothing to do
+
+do_pseudo_switch(I=#pseudo_switch{jtab=JTab,index=Index}, TempMap, Strategy) ->
+  {FixJTab,NewJTab,DidSpill1} = fix_src1(JTab, TempMap, Strategy),
+  {FixIndex,NewIndex,DidSpill2} = fix_src2(Index, TempMap, Strategy),
+  NewI = I#pseudo_switch{jtab=NewJTab,index=NewIndex},
+  {FixJTab ++ FixIndex ++ [NewI], DidSpill1 or DidSpill2}.
 
 do_pseudo_tailcall(I=#pseudo_tailcall{funv=FunV}, TempMap, Strategy) ->
   {FixFunV,NewFunV,DidSpill} = fix_funv(FunV, TempMap, Strategy),

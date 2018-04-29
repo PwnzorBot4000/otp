@@ -56,6 +56,8 @@ insn_temps(T, I) ->
       #pseudo_call{funv=F} -> I#pseudo_call{funv=funv_temps(T, F)};
       #pseudo_call_prepare{} -> I;
       #pseudo_li{dst=D} -> I#pseudo_li{dst=T(D)};
+      #pseudo_switch{jtab=J=#aarch64_temp{},index=Ix=#aarch64_temp{}} ->
+	  I#pseudo_switch{jtab=T(J),index=T(Ix)};
       #pseudo_tailcall{funv=F,stkargs=Stk} ->
 	  I#pseudo_tailcall{funv=funv_temps(T,F),stkargs=lists:map(Arg,Stk)};
       #pseudo_tailcall_prepare{} -> I

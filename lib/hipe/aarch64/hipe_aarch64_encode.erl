@@ -238,8 +238,8 @@ ldr({Size, {r, Dst}, Src}) ->
       ldstr_imm_form(Size, 2#0, 2#01, Offset, Base, Dst);
     {'unscaled_offset', {r, Base}, {imm9, Offset}} ->
       ldstr_unscaled_form(Size, 2#0, 2#01, Offset, Base, Dst);
-    {'register_offset', {r, Base}, {r, Offset}} ->
-      ldstr_reg_form(Size, 2#0, 2#01, Offset, 2#011, 0, Base, Dst);
+    {'register_offset', {r, Base}, {r, Offset}, {shift, Shift}} ->
+      ldstr_reg_form(Size, 2#0, 2#01, Offset, 2#011, Shift, Base, Dst);
     {'pc-relative', {imm19, Offset}} ->
       ldstr_pcrel_form(2#01, 2#0, Offset, Dst)
   end.
