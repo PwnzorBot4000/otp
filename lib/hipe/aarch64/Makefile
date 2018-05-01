@@ -54,6 +54,7 @@ MODULES=hipe_aarch64 \
 	hipe_aarch64_frame \
 	hipe_aarch64_liveness_gpr \
 	hipe_aarch64_main \
+	hipe_aarch64_pp \
 	hipe_aarch64_ra \
 	hipe_aarch64_ra_finalise \
 	hipe_aarch64_ra_ls \

@@ -14,7 +14,8 @@
 
 -module(hipe_aarch64_registers).
 
--export([first_virtual/0,
+-export([reg_name_gpr/1,
+     first_virtual/0,
      is_precoloured_gpr/1,
      all_precoloured/0,
 	 return_value/0,
@@ -89,6 +90,9 @@
 -define(HEAP_POINTER, ?X26).
 -define(STACK_POINTER, ?X27).
 -define(PROC_POINTER, ?X28).
+
+reg_name_gpr(31) -> "SP";
+reg_name_gpr(R) -> [$x | integer_to_list(R)].
 
 %%% Must handle both GPR and FPR ranges.
 first_virtual() -> ?LAST_PRECOLOURED + 1.

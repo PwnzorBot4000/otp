@@ -102,6 +102,7 @@
      mk_addi/4,
 
 	 try_aluop_imm/2,
+     bitmask_decode_pattern/3,
 
 	 mk_defun/8,
 	 defun_mfa/1,
@@ -389,7 +390,7 @@ imm_to_bitmask(Imm, Esize) when Esize =< 64 ->
       Sones = countbits(1, Pattern bsr R0, Esize - R0),
       S = Sones + Rones - 1,
       R = R0 rem Esize,
-      Generated = rol(ones(S + 1), R, Esize),
+      Generated = bitmask_decode_pattern(S, R, Esize),
       if (Generated == Pattern) ->
           Imms = (S band (Esize - 1)) bor (ones(6) - (Esize - 1)),
           N = if (Esize == 64) -> 1;
@@ -399,6 +400,10 @@ imm_to_bitmask(Imm, Esize) when Esize =< 64 ->
         true -> []
       end
   end.
+
+%%% Generate the pattern to be replicated from the encode.
+bitmask_decode_pattern(S, R, Esize) ->
+  rol(ones(S + 1), R, Esize).
 
 %%% Return a binary number consisting of N 'one' bits.
 ones(N) -> (1 bsl N) - 1.
