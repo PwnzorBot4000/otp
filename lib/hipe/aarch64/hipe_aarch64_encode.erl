@@ -177,6 +177,14 @@ orr({{'cond', 'al'}, {s,_S}, {r,Dst}, {r,Opnd}, AmOpnd}) ->
       data_reg_shift_logical_form(1, 2#00, 2#00, 0, Register, 2#000000, Opnd, Dst)
   end.
 
+eor({{'cond', 'al'}, {s,_S}, {r,Dst}, {r,Opnd}, AmOpnd}) ->
+  case AmOpnd of
+    {'bitmask', {n, N}, {imms, Imms}, {immr, Immr}} ->
+      data_imm_logical_form(1, 2#10, N, Imms, Immr, Opnd, Dst);
+    {r, Register} ->
+      data_reg_shift_logical_form(1, 2#10, 2#00, 0, Register, 2#000000, Opnd, Dst)
+  end.
+
 tst({{'cond', 'al'}, {r, Opnd}, AmOpnd}) ->
   case AmOpnd of
     {'bitmask', {n, N}, {imms, Imms}, {immr, Immr}} ->
@@ -303,6 +311,7 @@ insn_encode(Op, Opnds) ->
     'br'  -> br(Opnds);
     'cmp' -> cmp(Opnds);
     'cmn' -> cmn(Opnds);
+    'eor' -> eor(Opnds);
     'ldr' -> ldr(Opnds);
     'ldrb' -> ldrb(Opnds);
     'lsl' -> lsl(Opnds);
