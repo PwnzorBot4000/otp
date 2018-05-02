@@ -95,7 +95,7 @@ pp_insn(Dev, I, Pre) ->
       io:format(Dev, "\tpseudo_bc ~w, .~s_~w # .~s_~w ~.2f\n",
 		[cond_name(Cond), Pre, TrueLab, Pre, FalseLab, Pred]);
     #pseudo_blr{} ->
-      io:format(Dev, "\tpseudo_blr\n", []);
+      io:format(Dev, "\tret\n", []);
     #pseudo_bx{src=Src} ->
       io:format(Dev, "\tpseudo_bx ", []),
       pp_temp(Dev, Src),
@@ -283,6 +283,7 @@ replicate_bits(Imm, Esize, Size, Pos) when (Pos < Size) ->
 pp_am2(Dev, #am2{src=Src, offset=Offset}) ->
   io:format(Dev, "[", []),
   pp_temp(Dev, Src),
+  io:format(Dev, ", ", []),
   case Offset of
     #aarch64_temp{} ->
       pp_temp(Dev, Offset);
