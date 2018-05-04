@@ -261,8 +261,8 @@ str({Size, {r, Src}, Dst}) ->
       ldstr_imm_form(Size, 2#0, 2#00, Offset, Base, Src);
     {'unscaled_offset', {r, Base}, {imm9, Offset}} ->
       ldstr_unscaled_form(Size, 2#0, 2#00, Offset, Base, Src);
-    {'register_offset', {r, Base}, {r, Offset}} ->
-      ldstr_reg_form(Size, 2#0, 2#00, Offset, 2#011, 0, Base, Src)
+    {'register_offset', {r, Base}, {r, Offset}, {shift, Shift}} ->
+      ldstr_reg_form(Size, 2#0, 2#00, Offset, 2#011, Shift, Base, Src)
   end.
 
 strb({_Size, Src, Dst}) ->
