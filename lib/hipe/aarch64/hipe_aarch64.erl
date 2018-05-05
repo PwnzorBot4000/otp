@@ -389,7 +389,7 @@ imm_to_bitmask(Imm, Esize) when Esize =< 64 ->
       R0 = Rzeros + Rones,
       Sones = countbits(1, Pattern bsr R0, Esize - R0),
       S = Sones + Rones - 1,
-      R = R0 rem Esize,
+      R = Esize - R0,
       Generated = bitmask_decode_pattern(S, R, Esize),
       if (Generated == Pattern) ->
           Imms = (S band (Esize - 1)) bor (ones(6) - (Esize - 1)),
@@ -403,16 +403,16 @@ imm_to_bitmask(Imm, Esize) when Esize =< 64 ->
 
 %%% Generate the pattern to be replicated from the encode.
 bitmask_decode_pattern(S, R, Esize) ->
-  rol(ones(S + 1), R, Esize).
+  ror(ones(S + 1), R, Esize).
 
 %%% Return a binary number consisting of N 'one' bits.
 ones(N) -> (1 bsl N) - 1.
 
-%%% Binary rotate left.
-rol(Number, Positions, Size) ->
-  Shifted = (Number bsl Positions) band ones(Size),
-  Recycled = Number band (ones(Positions) bsl (Size - Positions)),
-  Shifted bor (Recycled bsr (Size - Positions)).
+%%% Binary rotate right.
+ror(Number, Positions, Size) ->
+  Shifted = Number bsr Positions,
+  Recycled = (Number band ones(Positions)) bsl (Size - Positions),
+  Shifted bor Recycled.
 
 %%% Test whether a pattern replicates inside
 %%% a 64-bit binary number.
