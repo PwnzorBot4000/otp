@@ -185,7 +185,7 @@ is_not_fallthrough_insn(I) ->
     #b_label{'cond'='al'} -> true;
     %% bl and blx are not included since they return to ".+4"
     #pseudo_blr{} -> true;
-    % XXX: pseudo_switch equivalent?
+    #pseudo_bx{} -> true;
     _ -> false
   end.
 
