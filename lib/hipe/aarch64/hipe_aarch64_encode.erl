@@ -130,7 +130,11 @@ ubfm({r,Dst}, {r,Src}, Immr, Imms) ->
 asr({{'cond', 'al'}, _S, Dst, Src, Shift}) ->
   case Shift of
     {'immediate', {imm6, Imm6}} ->
-      sbfm(Dst, Src, Imm6, 2#111111)
+      sbfm(Dst, Src, Imm6, 2#111111);
+    {r, Rm} ->
+      {r, Rn} = Src,
+      {r, Rd} = Dst,
+      data_reg_2src_form(1, 0, Rm, 2#001010, Rn, Rd)
   end.
 
 lsl({{'cond', 'al'}, _S, Dst, Src, Shift}) ->
