@@ -442,6 +442,13 @@ static const struct atom_literal {
      "little"
 #endif
    },
+   { "AARCH64_ENDIANESS",
+#if defined(__aarch64__) && defined(__ARM64EB__)
+     "big"
+#else
+     "little"
+#endif
+   },
 };
 
 #define NR_ATOM_LITERALS ARRAY_SIZE(atom_literals)

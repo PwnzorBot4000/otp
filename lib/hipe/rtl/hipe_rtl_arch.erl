@@ -328,7 +328,8 @@ endianess() ->
     ppc64      -> big;
     x86        -> little;
     amd64      -> little;
-    arm        -> ?ARM_ENDIANESS
+    arm        -> ?ARM_ENDIANESS;
+    aarch64    -> ?AARCH64_ENDIANESS
   end.
 
 %%%------------------------------------------------------------------------
