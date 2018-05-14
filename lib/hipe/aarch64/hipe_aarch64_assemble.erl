@@ -275,11 +275,13 @@ do_label(I) ->
 do_load(I) ->
   #load{ldop=LdOp,dst=Dst,am2=Am2} = I,
   NewDst = do_reg(Dst),
-  NewAm2 = do_am2(Am2),
   {NewLdOp, Size} = case LdOp of
-    ldr32 -> {'ldr', 2#10};
-    _ -> {LdOp, 2#11}
+    'ldr' -> {'ldr', 2#11};
+    'ldr32' -> {'ldr', 2#10};
+    'ldrh' -> {'ldrh', 2#01};
+    'ldrb' -> {'ldrb', 2#00}
   end,
+  NewAm2 = do_am2(Am2, Size),
   [{NewLdOp, {Size,NewDst,NewAm2}, I}].
 
 do_pseudo_blr(I) ->
@@ -337,11 +339,13 @@ do_pseudo_li(I, MFA, ConstMap, Address, PrevImms, PendImms) ->
 do_store(I) ->
   #store{stop=StOp,src=Src,am2=Am2} = I,
   NewSrc = do_reg(Src),
-  NewAm2 = do_am2(Am2),
   {NewStOp, Size} = case StOp of
-    str32 -> {'str', 2#10};
-    _ -> {StOp, 2#11}
+    'str' -> {'str', 2#11};
+    'str32' -> {'str', 2#10};
+    'strh' -> {'strh', 2#01};
+    'strb' -> {'strb', 2#00}
   end,
+  NewAm2 = do_am2(Am2, Size),
   [{NewStOp, {Size,NewSrc,NewAm2}, I}].
 
 do_reg(#aarch64_temp{reg=Reg,type=Type})
@@ -364,15 +368,15 @@ do_am1(Am1) ->
     {bitmask,N,Imms,Immr} -> {'bitmask', {n, N}, {imms, Imms}, {immr, Immr}}
   end.
 
-do_am2(#am2{src=Src,offset=Offset}) ->
+do_am2(#am2{src=Src,offset=Offset}, Size) ->
   NewSrc = do_reg(Src),
   case Offset of
     #aarch64_temp{} ->
       {'register_offset', NewSrc, do_reg(Offset), {shift, 0}};
     {#aarch64_temp{} = Index, words} ->
       {'register_offset', NewSrc, do_reg(Index), {shift, 1}};
-    Imm when (Imm band 2#111) == 0 ->
-      {'immediate_offset', NewSrc, {imm12, Imm bsr 3}};
+    Imm when (Imm band ((1 bsl Size) - 1)) == 0 ->
+      {'immediate_offset', NewSrc, {imm12, Imm bsr Size}};
     Imm ->
       {'unscaled_offset', NewSrc, {imm9, Imm}}
   end.

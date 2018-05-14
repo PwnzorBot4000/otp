@@ -167,7 +167,13 @@ label_label(#label{label=Label}) -> Label.
 mk_load(LdOp, Dst, Am2) -> #load{ldop=LdOp, dst=Dst, am2=Am2}.
 
 mk_load(LdOp, Dst, Base, Offset, Scratch, Rest) ->
-  Am2 = imm_to_am2(Base, Offset),
+  Size = case LdOp of
+    'ldr' -> word;
+    'ldr32' -> int32;
+    'ldrh' -> halfword;
+    'ldrb' -> byte
+  end,
+  Am2 = imm_to_am2(Base, Offset, Size),
   case Am2 of
     #am2{} ->
       [mk_load(LdOp, Dst, Am2) | Rest];
@@ -180,8 +186,9 @@ mk_load(LdOp, Dst, Base, Offset, Scratch, Rest) ->
          true -> mk_scratch(Scratch)
       end
     end,
+      NewAm2 = mk_am2(Base, Index),
       mk_li(Index, Offset,
-        [mk_load(LdOp, Dst, Am2) | Rest])
+        [mk_load(LdOp, Dst, NewAm2) | Rest])
   end.
 
 mk_scratch(Scratch) ->
@@ -257,14 +264,21 @@ mk_pseudo_tailcall_prepare() -> #pseudo_tailcall_prepare{}.
 mk_store(StOp, Src, Am2) -> #store{stop=StOp, src=Src, am2=Am2}.
 
 mk_store(StOp, Src, Base, Offset, Scratch, Rest) ->
-  Am2 = imm_to_am2(Base, Offset),
+  Size = case StOp of
+    'str' -> word;
+    'str32' -> int32;
+    'strh' -> halfword;
+    'strb' -> byte
+  end,
+  Am2 = imm_to_am2(Base, Offset, Size),
   case Am2 of
     #am2{} ->
       [mk_store(StOp, Src, Am2) | Rest];
     [] ->
       Index = mk_scratch(Scratch),
+      NewAm2 = mk_am2(Base, Index),
       mk_li(Index, Offset,
-        [mk_store(StOp, Src, Am2) | Rest])
+        [mk_store(StOp, Src, NewAm2) | Rest])
   end.
 
 mk_pseudo_blr() -> #pseudo_blr{}.
@@ -492,15 +506,26 @@ is_shift_op(AluOp) ->
     _ -> false
   end.
 
-% Loads and stores in aarch64 will accept a 12-bit 8x scaled
+% 64-bit loads and stores in aarch64 will accept a 12-bit 8x scaled
 % unsigned immediate offset, meaning a range of 0 - 16#7FF8.
+% 32-bit loads and stores are 4x scaled, meaning a range
+% of 0 - 16#3FFC.
+% 16-bit loads and stores (halfwords) are 2x scaled, meaning a range
+% of 0 - 16#1FFE.
+% Byte loads and stores are unscaled, meaning a range of 0 - 16#FFF.
 % For unaligned offsets, unscaled 9-bit immediate instructions exist,
 % with a range of -256 - 255.
 % For greater ranges, we use register offset via a scratch register.
 
-imm_to_am2(Base, Offset) when is_integer(Offset) ->
-  if (((Offset band 2#111) == 0 andalso
-       Offset >= 0 andalso Offset =< 16#7FF8) orelse
+imm_to_am2(Base, Offset, Size) when is_integer(Offset) ->
+  {ULim, Align} = case Size of
+    word -> {16#7FF8, 2#111};
+    int32 -> {16#3FFC, 2#11};
+    halfword -> {16#1FFE, 2#1};
+    byte -> {16#FFF, 0}
+  end,
+  if (((Offset band Align) == 0 andalso
+       Offset >= 0 andalso Offset =< ULim) orelse
       (Offset >= -256 andalso Offset =< 255))->
       #am2{src=Base,offset=Offset};
     true -> []
