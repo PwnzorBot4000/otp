@@ -375,7 +375,7 @@ do_am2(#am2{src=Src,offset=Offset}, Size) ->
       {'register_offset', NewSrc, do_reg(Offset), {shift, 0}};
     {#aarch64_temp{} = Index, words} ->
       {'register_offset', NewSrc, do_reg(Index), {shift, 1}};
-    Imm when (Imm band ((1 bsl Size) - 1)) == 0 ->
+    Imm when (Imm band ((1 bsl Size) - 1)) =:= 0 ->
       {'immediate_offset', NewSrc, {imm12, Imm bsr Size}};
     Imm ->
       {'unscaled_offset', NewSrc, {imm9, Imm}}

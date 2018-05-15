@@ -524,7 +524,7 @@ imm_to_am2(Base, Offset, Size) when is_integer(Offset) ->
     halfword -> {16#1FFE, 2#1};
     byte -> {16#FFF, 0}
   end,
-  if (((Offset band Align) == 0 andalso
+  if (((Offset band Align) =:= 0 andalso
        Offset >= 0 andalso Offset =< ULim) orelse
       (Offset >= -256 andalso Offset =< 255))->
       #am2{src=Base,offset=Offset};
