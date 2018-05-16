@@ -243,9 +243,15 @@ mk_branch(Src1, CmpOp, Src2, Cond, TrueLab, FalseLab, Pred) ->
 	    end,
 	  mk_branch_ri(Src2, CmpOp, Src1, NewCond, TrueLab, FalseLab, Pred);
 	_ ->
-	  throw("unimplemented") % XXX should optimize out?
+	  mk_branch_ii(Src1, CmpOp, Src2, Cond, TrueLab, FalseLab, Pred)
       end
   end.
+
+mk_branch_ii(Imm1, CmpOp, Imm2, Cond, TrueLab, FalseLab, Pred) ->
+Tmp = new_untagged_temp(),
+mk_li(Tmp, Imm1,
+  mk_branch_ri(Tmp, CmpOp, Imm2, Cond,
+           TrueLab, FalseLab, Pred)).
 
 mk_branch_ri(Src, CmpOp, Imm, Cond, TrueLab, FalseLab, Pred) ->
   {FixAm1,NewCmpOp,Am1} = fix_aluop_imm(CmpOp, Imm),
