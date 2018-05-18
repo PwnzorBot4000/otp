@@ -548,17 +548,14 @@ define(nocons_nofail_primop_interface_5,
 #`define' HAVE_$1
 	.global	$1
 $1:
-	/* Set up C argument stack. */
-	NBIF_ARG(x0,5,3)
-	str	x0, [sp, #0]
-	NBIF_ARG(x0,5,4)
-	str	x0, [sp, #4]
 
 	/* Set up C argument registers. */
 	mov	x0, P
 	NBIF_ARG(x1,5,0)
 	NBIF_ARG(x2,5,1)
 	NBIF_ARG(x3,5,2)
+	NBIF_ARG(x4,5,3)
+	NBIF_ARG(x5,5,4)
 
 	/* Perform a quick save;call;restore;ret sequence. */
 #ifdef __thumb__
@@ -685,7 +682,6 @@ $1:
 	NBIF_ARG(x2,5,2)
 	NBIF_ARG(x3,5,3)
 	NBIF_ARG(x4,5,4)
-	str	x4, [sp, #0]
 
 	/* Perform a quick save;call;restore;ret sequence. */
 #ifdef __thumb__

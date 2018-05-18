@@ -34,9 +34,6 @@
  *
  * Our C frame includes:
  * - 12*8 == 96 bytes for saving x19-x28, fp (x29) and lr (x30)
- * - 2*8 == 16 bytes for calls to hipe_bs_put_{big_integer,small_float}.
- *   They take 5-6 parameter dwords: 4 in registers and 1-2 on the stack.
- *   (They take 5 regular parameters, and an additional P parameter on SMP.)
  */
 #define ENTER_FROM_C	\
     stp x29, x30, [sp, #-16]! ; \
@@ -45,7 +42,6 @@
     stp x23, x24, [sp, #-16]! ; \
     stp x21, x22, [sp, #-16]! ; \
     stp x19, x20, [sp, #-16]! ; \
-    sub sp, sp, #16; \
 	mov	P, x0;	\
 	RESTORE_CACHED_STATE
 
@@ -65,7 +61,6 @@
 	SAVE_CACHED_STATE
 .nosave_exit:
 	/* restore callee-save registers, drop frame, return */
-    add sp, sp, #16;
     ldp x19, x20, [sp], #16
     ldp x21, x22, [sp], #16
     ldp x23, x24, [sp], #16

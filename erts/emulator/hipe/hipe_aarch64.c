@@ -83,8 +83,8 @@ static void generate_trampolines(Uint32* address,
     int i;
 
     for (i = 0; i < nrcallees; ++i) {
-        trampoline[0] = 0x58000050;     /* ldr x16, .+8 */
-        trampoline[1] = 0xD61F0200;		/* br x16 */
+        trampoline[0] = 0x58000000 | (2 << 5) | 16;     /* ldr x16, .+8 */
+        trampoline[1] = 0xD61F0000 | (16 << 5);		/* br x16 */
         trampoline[2] = 0;		/* callee's address (part 1) */
         trampoline[3] = 0;		/* callee's address (part 2)*/
     	trampvec[i] = trampoline;
@@ -210,7 +210,7 @@ void *hipe_make_native_stub(void *callee_exp, unsigned int beamArity)
         /* ldr x16, .+16 // nbif_callemu */
         code[2] = 0x58000000 | (4 << 5) | 16;
         /* br x16 */
-        code[3] = 0xD61F0200;
+        code[3] = 0xD61F0000 | (16 << 5);
     }
     /* .quad callee_exp */
     *((Uint64*)&(code[4])) = (Uint64) callee_exp;
