@@ -127,7 +127,7 @@ sbfm({r,Dst}, {r,Src}, Immr, Imms) ->
 ubfm({r,Dst}, {r,Src}, Immr, Imms) ->
   data_imm_bitfield_form(1, 2#10, 1, Immr, Imms, Src, Dst).
 
-asr({{'cond', 'al'}, _S, Dst, Src, Shift}) ->
+asr({{'cond', 'al'}, {s,0}, Dst, Src, Shift}) ->
   case Shift of
     {'immediate', {imm6, Imm6}} ->
       sbfm(Dst, Src, Imm6, 2#111111);
@@ -137,7 +137,7 @@ asr({{'cond', 'al'}, _S, Dst, Src, Shift}) ->
       data_reg_2src_form(1, 0, Rm, 2#001010, Rn, Rd)
   end.
 
-lsl({{'cond', 'al'}, _S, Dst, Src, Shift}) ->
+lsl({{'cond', 'al'}, {s,0}, Dst, Src, Shift}) ->
   case Shift of
     {'immediate', {imm6, Imm6}} when Imm6 =/= 0 ->
       ubfm(Dst, Src, 64 - Imm6, 63 - Imm6);
@@ -147,7 +147,7 @@ lsl({{'cond', 'al'}, _S, Dst, Src, Shift}) ->
       data_reg_2src_form(1, 0, Rm, 2#001000, Rn, Rd)
   end.
 
-lsr({{'cond', 'al'}, _S, Dst, Src, Shift}) ->
+lsr({{'cond', 'al'}, {s,0}, Dst, Src, Shift}) ->
   case Shift of
     {'immediate', {imm6, Imm6}} when Imm6 =/= 0 ->
       ubfm(Dst, Src, Imm6, 63);
@@ -165,7 +165,7 @@ data_imm_logical_form(Sf, Opc, N, Imms, Immr, Rn, Rd) ->
 data_reg_shift_logical_form(Sf, Opc, Shift, N, Rm, Imm6, Rn, Rd) ->
   ?BIT(31,Sf) bor ?BF(30,29,Opc) bor ?BF(28,24,2#01010) bor ?BF(23,22,Shift) bor ?BIT(21,N) bor ?BF(20,16,Rm) bor ?BF(15,10,Imm6) bor ?BF(9,5,Rn) bor ?BF(4,0,Rd).
 
-orr({{'cond', 'al'}, {s,_S}, {r,Dst}, {r,Opnd}, AmOpnd}) ->
+orr({{'cond', 'al'}, {s, 0}, {r,Dst}, {r,Opnd}, AmOpnd}) ->
   case AmOpnd of
     {'bitmask', {n, N}, {imms, Imms}, {immr, Immr}} ->
       data_imm_logical_form(1, 2#01, N, Imms, Immr, Opnd, Dst);
@@ -173,15 +173,19 @@ orr({{'cond', 'al'}, {s,_S}, {r,Dst}, {r,Opnd}, AmOpnd}) ->
       data_reg_shift_logical_form(1, 2#01, 2#00, 0, Register, 2#000000, Opnd, Dst)
   end.
 
-'and'({{'cond', 'al'}, {s,_S}, {r,Dst}, {r,Opnd}, AmOpnd}) ->
+'and'({{'cond', 'al'}, {s,S}, {r,Dst}, {r,Opnd}, AmOpnd}) ->
+  Opc = case S of
+    0 -> 2#00;
+    1 -> 2#11
+  end,
   case AmOpnd of
     {'bitmask', {n, N}, {imms, Imms}, {immr, Immr}} ->
-      data_imm_logical_form(1, 2#00, N, Imms, Immr, Opnd, Dst);
+      data_imm_logical_form(1, Opc, N, Imms, Immr, Opnd, Dst);
     {r, Register} ->
-      data_reg_shift_logical_form(1, 2#00, 2#00, 0, Register, 2#000000, Opnd, Dst)
+      data_reg_shift_logical_form(1, Opc, 2#00, 0, Register, 2#000000, Opnd, Dst)
   end.
 
-eor({{'cond', 'al'}, {s,_S}, {r,Dst}, {r,Opnd}, AmOpnd}) ->
+eor({{'cond', 'al'}, {s, 0}, {r,Dst}, {r,Opnd}, AmOpnd}) ->
   case AmOpnd of
     {'bitmask', {n, N}, {imms, Imms}, {immr, Immr}} ->
       data_imm_logical_form(1, 2#10, N, Imms, Immr, Opnd, Dst);
