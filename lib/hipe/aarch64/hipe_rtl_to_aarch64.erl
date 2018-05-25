@@ -438,8 +438,10 @@ mk_load(Dst, Base1, Base2, LoadSize, LoadSign) ->
       end
   end.
 
-mk_load_ii(_Dst, _Base1, _Base2, _LdOp) ->
-  throw("unimplemented").
+mk_load_ii(Dst, Base1, Base2, LdOp) ->
+  Tmp = new_untagged_temp(),
+  mk_li(Tmp, Base1,
+	mk_load_ri(Dst, Tmp, Base2, LdOp)).
    
 mk_load_ri(Dst, Base, Offset, LdOp) ->
   hipe_aarch64:mk_load(LdOp, Dst, Base, Offset, 'new', []).
