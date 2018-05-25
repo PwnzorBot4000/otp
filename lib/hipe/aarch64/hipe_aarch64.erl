@@ -41,6 +41,8 @@
 
      mk_blx/2,
 
+     mk_cb/3,
+
      mk_cmp/3,
 
 	 mk_comment/1,
@@ -67,6 +69,7 @@
 
      mk_move/2,
 
+	 mk_pseudo_cb/5,
 	 mk_pseudo_bc/4,
 
 	 mk_pseudo_li/2,
@@ -150,6 +153,8 @@ mk_bl(Fun, SDesc, Linkage) -> #bl{'fun'=Fun, sdesc=SDesc, linkage=Linkage}.
 
 mk_blx(Src, SDesc) -> #blx{src=Src, sdesc=SDesc}.
 
+mk_cb(CbOp, Src, Label) -> #cb{cmpop=CbOp, src=Src, label=Label}.
+
 mk_cmp(CmpOp, Src, Am1) -> #cmp{cmpop=CmpOp, src=Src, am1=Am1}.
 
 mk_sdesc(ExnLab, FSize, Arity, Live) ->
@@ -199,6 +204,24 @@ mk_scratch(Scratch) ->
 
 mk_move(MovOp, S, Dst, Am1) -> #move{movop=MovOp, s=S, dst=Dst, am1=Am1}.
 mk_move(Dst, Am1) -> mk_move('mov', false, Dst, Am1).
+
+mk_pseudo_cb(Cbop, Src, TrueLab, FalseLab, Pred) ->
+  if Pred >= 0.5 ->
+      mk_pseudo_cb_simple(negate_cbop(Cbop), Src, FalseLab,
+			  TrueLab, 1.0-Pred);
+     true ->
+      mk_pseudo_cb_simple(Cbop, Src, TrueLab, FalseLab, Pred)
+  end.
+
+mk_pseudo_cb_simple(Cbop, Src, TrueLab, FalseLab, Pred) when Pred =< 0.5 ->
+  #pseudo_cb{cbop=Cbop, src=Src, true_label=TrueLab,
+	     false_label=FalseLab, pred=Pred}.
+
+negate_cbop(Cbop) ->
+  case Cbop of
+    cbz -> cbnz;  % ==, !=
+    cbnz -> cbz   % !=, ==
+  end.
 
 mk_pseudo_bc(Cond, TrueLab, FalseLab, Pred) ->
   if Pred >= 0.5 ->

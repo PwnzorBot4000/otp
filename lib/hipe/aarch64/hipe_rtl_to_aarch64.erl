@@ -102,16 +102,9 @@ is_aluop_transitive(AluOp) ->
     _ -> true
   end.
 
-conv_cmpop('add') -> 'cmn';
-conv_cmpop('sub') -> 'cmp';
-conv_cmpop('and') -> 'tst';
-conv_cmpop('xor') -> 'b.eq';
-conv_cmpop(_) -> none.
-
 cmpop_commutes('cmp') -> false;
 cmpop_commutes('cmn') -> true;
-cmpop_commutes('tst') -> true;
-cmpop_commutes('teq') -> true.
+cmpop_commutes('tst') -> true.
 
 mk_alu(S, Dst, Src1, RtlAluOp, Src2) ->
   AluOp = conv_aluop(RtlAluOp),
@@ -192,28 +185,45 @@ conv_alub(I, Map, Data) ->
   RtlAluOp = hipe_rtl:alub_op(I),
   RtlCond = hipe_rtl:alub_cond(I),
   HasDst = hipe_rtl:alub_has_dst(I),
-  CmpOp = conv_cmpop(RtlAluOp),
-  Cond0 = conv_alub_cond(RtlAluOp, RtlCond),
-  case (not HasDst) andalso CmpOp =/= none of
-    true ->
-      I1 = mk_branch(Src1, CmpOp, Src2, Cond0,
+  {AluOp, BranchOp, Cond0, Type} = case {HasDst, RtlAluOp, RtlCond} of
+    {false, add, _} -> {cmn, b, same, cmp};
+    {false, sub, _} -> {cmp, b, same, cmp};
+    {false, 'and', eq} -> {tst, b, same, cmp};
+    {false, 'and', ne} -> {tst, b, same, cmp};
+    {_, 'xor', eq} -> {eor, cbz, none, cb};
+    {_, 'xor', ne} -> {eor, cbnz, none, cb};
+    {true, add, _} -> {add, b, same, alu};
+    {true, sub, _} -> {sub, b, same, alu};
+    {true, 'and', _} -> {'and', b, same, alu};
+    {true, mul, overflow} -> {mul, b, ne, alu};
+    {true, mul, not_overflow} -> {mul, b, eq, alu};
+    _ -> exit({?MODULE,I})
+  end,
+  Cond = case Cond0 of
+      same -> conv_alub_cond(RtlAluOp, RtlCond);
+      _ -> Cond0
+  end,
+  {Dst, Map2} = case {HasDst, Type} of
+    {false, cmp} -> {none, Map1};
+    {false, _} -> {new_untagged_temp(), Map1};
+    {true, _} -> conv_dst(hipe_rtl:alub_dst(I), Map1)
+  end,
+  case Type of
+    cmp ->
+      I1 = mk_branch(Src1, AluOp, Src2, Cond,
 		     hipe_rtl:alub_true_label(I),
 		     hipe_rtl:alub_false_label(I),
 		     hipe_rtl:alub_pred(I)),
-      {I1, Map1, Data};
-    false ->
-      {Dst, Map2} =
-	case HasDst of
-	  false -> {new_untagged_temp(), Map1};
-	  true -> conv_dst(hipe_rtl:alub_dst(I), Map1)
-	end,
-      Cond =
-	case {RtlAluOp,Cond0} of
-	  {'mul','vs'} -> 'ne';	% overflow becomes not-equal
-	  {'mul','vc'} -> 'eq';	% no-overflow becomes equal
-	  {'mul',_} -> exit({?MODULE,I});
-	  {_,_} -> Cond0
-	end,
+      {I1, Map2, Data};
+    cb ->
+      I2 = mk_pseudo_cb(BranchOp, Dst,
+	     hipe_rtl:alub_true_label(I),
+	     hipe_rtl:alub_false_label(I),
+	     hipe_rtl:alub_pred(I)),
+      S = false,
+      I1 = mk_alu(S, Dst, Src1, RtlAluOp, Src2),
+      {I1 ++ I2, Map2, Data};
+    alu ->
       I2 = mk_pseudo_bc(
 	     Cond,
 	     hipe_rtl:alub_true_label(I),
@@ -564,6 +574,11 @@ conv_switch(I, Map, Data) ->
     [hipe_aarch64:mk_pseudo_li(JTabR, {JTabLab,constant}),
      hipe_aarch64:mk_pseudo_switch(JTabR, IndexR, Labels)],
   {I2, Map1, NewData}.
+
+%%% Create a compare-and-branch.
+
+mk_pseudo_cb(CbOp, Src, TrueLabel, FalseLabel, Pred) ->
+  [hipe_aarch64:mk_pseudo_cb(CbOp, Src, TrueLabel, FalseLabel, Pred)].
 
 %%% Create a conditional branch.
 

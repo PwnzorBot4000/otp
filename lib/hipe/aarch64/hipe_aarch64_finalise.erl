@@ -38,6 +38,10 @@ expand_list([], Accum) ->
 
 expand_insn(I, Accum) ->
   case I of
+    #pseudo_cb{cbop=CbOp,src=Src,true_label=TrueLab,false_label=FalseLab} ->
+      [hipe_aarch64:mk_b_label(FalseLab),
+       hipe_aarch64:mk_cb(CbOp, Src, TrueLab) |
+       Accum];
     #pseudo_bc{'cond'=Cond,true_label=TrueLab,false_label=FalseLab} ->
       [hipe_aarch64:mk_b_label(FalseLab),
        hipe_aarch64:mk_b_label(Cond, TrueLab) |

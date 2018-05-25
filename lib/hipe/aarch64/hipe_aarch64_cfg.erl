@@ -50,6 +50,7 @@ is_branch(I) ->
   case I of
     #b_fun{} -> true;
     #b_label{'cond'='al'} -> true;
+    #pseudo_cb{} -> true;
     #pseudo_bc{} -> true;
     #pseudo_blr{} -> true;
     #pseudo_bx{} -> true;
@@ -63,6 +64,7 @@ branch_successors(Branch) ->
   case Branch of
     #b_fun{} -> [];
     #b_label{'cond'='al',label=Label} -> [Label];
+    #pseudo_cb{true_label=TrueLab,false_label=FalseLab} -> [FalseLab,TrueLab];
     #pseudo_bc{true_label=TrueLab,false_label=FalseLab} -> [FalseLab,TrueLab];
     #pseudo_blr{} -> [];
     #pseudo_bx{} -> [];
@@ -77,6 +79,8 @@ branch_successors(Branch) ->
 
 branch_preds(Branch) ->
   case Branch of
+    #pseudo_cb{true_label=TrueLab,false_label=FalseLab,pred=Pred} ->
+      [{FalseLab, 1.0-Pred}, {TrueLab, Pred}];
     #pseudo_bc{true_label=TrueLab,false_label=FalseLab,pred=Pred} ->
       [{FalseLab, 1.0-Pred}, {TrueLab, Pred}];
     #pseudo_call{contlab=ContLab, sdesc=#aarch64_sdesc{exnlab=[]}} ->
