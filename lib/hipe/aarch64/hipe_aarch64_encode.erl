@@ -263,6 +263,12 @@ ldr({Size, {r, Dst}, Src}) ->
 ldrb({_Size, Dst, Src}) ->
   ldr({2#00, Dst, Src}).
 
+ldrsb({_Size, {r, Dst}, Src}) ->
+  case Src of
+    {'register_offset', {r, Base}, {r, Offset}, {shift, 0}} ->
+      ldstr_reg_form(2#00, 2#0, 2#10, Offset, 2#011, 2#0, Base, Dst)
+  end.
+
 str({Size, {r, Src}, Dst}) ->
   case Dst of
     {'immediate_offset', {r, Base}, {imm12, Offset}} ->
@@ -322,6 +328,7 @@ insn_encode(Op, Opnds) ->
     'eor' -> eor(Opnds);
     'ldr' -> ldr(Opnds);
     'ldrb' -> ldrb(Opnds);
+    'ldrsb' -> ldrsb(Opnds);
     'lsl' -> lsl(Opnds);
     'lsr' -> lsr(Opnds);
     'mov' -> mov(Opnds);

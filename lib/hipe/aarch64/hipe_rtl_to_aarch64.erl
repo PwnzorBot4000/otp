@@ -405,32 +405,14 @@ conv_load(I, Map, Data) ->
   {I2, Map2, Data}.
 
 mk_load(Dst, Base1, Base2, LoadSize, LoadSign) ->
-  case {LoadSize,LoadSign} of
-    {byte,signed} ->
-      case hipe_aarch64:is_temp(Base1) of
-	true ->
-	  case hipe_aarch64:is_temp(Base2) of
-	    true ->
-	      mk_ldrsb_rr(Dst, Base1, Base2);
-	    _ ->
-	      mk_ldrsb_ri(Dst, Base1, Base2)
-	  end;
-	_ ->
-	  case hipe_aarch64:is_temp(Base2) of
-	    true ->
-	      mk_ldrsb_ri(Dst, Base2, Base1);
-	    _ ->
-	      mk_ldrsb_ii(Dst, Base1, Base2)
-	  end
-      end;
-    _ ->
-      LdOp =
-	case LoadSize of
-	  byte -> 'ldrb';
-	  int32 -> 'ldr32';
-	  word -> 'ldr'
-	end,
-      case hipe_aarch64:is_temp(Base1) of
+  LdOp = case {LoadSize, LoadSign} of
+    {byte, signed} -> 'ldrsb';
+    {byte, _} -> 'ldrb';
+	{int32, signed} -> 'ldrs32';
+	{int32, _} -> 'ldr32';
+	{word, _} -> 'ldr'
+  end,
+  case hipe_aarch64:is_temp(Base1) of
 	true ->
 	  case hipe_aarch64:is_temp(Base2) of
 	    true ->
@@ -445,7 +427,6 @@ mk_load(Dst, Base1, Base2, LoadSize, LoadSign) ->
 	    _ ->
 	      mk_load_ii(Dst, Base1, Base2, LdOp)
 	  end
-      end
   end.
 
 mk_load_ii(Dst, Base1, Base2, LdOp) ->
@@ -459,15 +440,6 @@ mk_load_ri(Dst, Base, Offset, LdOp) ->
 mk_load_rr(Dst, Base1, Base2, LdOp) ->
   Am2 = hipe_aarch64:mk_am2(Base1, Base2),
   [hipe_aarch64:mk_load(LdOp, Dst, Am2)].
-
-mk_ldrsb_ii(_Dst, _Base1, _Base2) ->
-  throw("unimplemented").
-   
-mk_ldrsb_ri(_Dst, _Base, Offset) when is_integer(Offset) ->
-  throw("unimplemented").
-
-mk_ldrsb_rr(_Dst, _Base1, _Base2) ->
-  throw("unimplemented").
 
 conv_load_address(I, Map, Data) ->
   {Dst, Map0} = conv_dst(hipe_rtl:load_address_dst(I), Map),

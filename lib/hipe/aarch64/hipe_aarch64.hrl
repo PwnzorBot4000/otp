@@ -95,7 +95,6 @@
 -record(comment, {term}).
 -record(label, {label}).
 -record(load, {ldop, dst, am2}).	% cond not included; ldrh/ldrsh not included
-%-record(ldrsb, {dst, am3}).		% cond not included
 -record(move, {movop, s, dst, am1}).	% cond not included
 -record(pseudo_cb, {cbop, src, true_label, false_label, pred}).
 -record(pseudo_bc, {'cond', true_label, false_label, pred}).

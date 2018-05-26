@@ -215,7 +215,6 @@ translate_insn(I) ->	% -> [{Op,Opnd,OrigI}]
     #comment{} -> [];
     #label{} -> do_label(I);
     #load{} -> do_load(I);
-    %#ldrsb{} -> do_ldrsb(I);
     #move{} -> do_move(I);
     %% pseudo_b: eliminated by finalise
     #pseudo_blr{} -> do_pseudo_blr(I);
@@ -278,8 +277,11 @@ do_load(I) ->
   {NewLdOp, Size} = case LdOp of
     'ldr' -> {'ldr', 2#11};
     'ldr32' -> {'ldr', 2#10};
+    'ldrs32' -> {'ldrsw', 2#10};
     'ldrh' -> {'ldrh', 2#01};
-    'ldrb' -> {'ldrb', 2#00}
+    'ldrsh' -> {'ldrsh', 2#01};
+    'ldrb' -> {'ldrb', 2#00};
+    'ldrsb' -> {'ldrsb', 2#00}
   end,
   NewAm2 = do_am2(Am2, Size),
   [{NewLdOp, {Size,NewDst,NewAm2}, I}].
