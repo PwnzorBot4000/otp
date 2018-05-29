@@ -225,15 +225,13 @@ negate_cbop(Cbop) ->
 
 mk_pseudo_bc(Cond, TrueLab, FalseLab, Pred) ->
   if Pred >= 0.5 ->
-      mk_pseudo_bc_simple(negate_cond(Cond), FalseLab,
-			  TrueLab, 1.0-Pred);
+      mk_pseudo_bc_simple(negate_cond(Cond), FalseLab, TrueLab, 1.0-Pred);
      true ->
       mk_pseudo_bc_simple(Cond, TrueLab, FalseLab, Pred)
   end.
 
 mk_pseudo_bc_simple(Cond, TrueLab, FalseLab, Pred) when Pred =< 0.5 ->
-  #pseudo_bc{'cond'=Cond, true_label=TrueLab,
-	     false_label=FalseLab, pred=Pred}.
+  #pseudo_bc{'cond'=Cond, true_label=TrueLab, false_label=FalseLab, pred=Pred}.
 
 negate_cond(Cond) ->
   case Cond of
@@ -355,36 +353,33 @@ try_aluop_imm(AluOp, Imm) ->
   case is_logical_op(AluOp) of
     true ->
       case imm_to_bitmask(Imm) of
-        (Am1 = {bitmask, _, _, _}) -> {AluOp, Am1};
+        {bitmask,_,_,_}=Am1 -> {AluOp, Am1};
         [] -> []
       end;
     false ->
-  case is_shift_op(AluOp) of
-    true ->
-      if Imm =/= (Imm band 2#111111) ->
-        []; % Imm can't fit in 6 bits
-      true ->
-        {AluOp, {imm6, Imm}}
-      end;
-    false -> % Arithmetic / move op
-      ImmSize = case AluOp of
-        'mov' -> imm16;
-        'mvn' -> imm16;
-        _     -> imm12
-      end,
-      case imm_to_am1(Imm, ImmSize) of
-        (Am1={_Size,_Imm,_Imm2}) -> {AluOp, Am1};
-        [] ->
-          case invert_aluop_imm(AluOp, Imm) of
-    	{NewAluOp,NewImm} ->
-    	  case imm_to_am1(NewImm, ImmSize) of
-    	    (Am1={_Size,_Imm,_Imm2}) -> {NewAluOp, Am1};
-    	    [] -> []
-    	  end;
-    	[] -> []
+      case is_shift_op(AluOp) of
+        true ->
+          if Imm =/= (Imm band 2#111111) ->
+              []; % Imm can't fit in 6 bits
+             true ->
+              {AluOp, {imm6, Imm}}
+          end;
+        false -> % Arithmetic / move op
+          ImmSize = case AluOp of
+                      'mov' -> imm16;
+                      'mvn' -> imm16;
+                      _     -> imm12
+                    end,
+          case imm_to_am1(Imm, ImmSize) of
+            {_Size,_Imm,_Imm2}=Am1 -> {AluOp, Am1};
+            [] ->
+              {NewAluOp, NewImm} = invert_aluop_imm(AluOp, Imm),
+              case imm_to_am1(NewImm, ImmSize) of
+                {_Size,_Imm,_Imm2}=Am1 -> {NewAluOp, Am1};
+                [] -> []
+              end
           end
       end
-  end
   end.
 
 invert_aluop_imm(AluOp, Imm) ->
@@ -428,13 +423,13 @@ imm_to_bitmask(Imm, Esize) when Esize =< 64 ->
       S = Sones + Rones - 1,
       R = Esize - R0,
       Generated = bitmask_decode_pattern(S, R, Esize),
-      if (Generated == Pattern) ->
+      if (Generated =:= Pattern) ->
           Imms = (S band (Esize - 1)) bor (ones(6) - (Esize - 1)),
-          N = if (Esize == 64) -> 1;
-            true -> 0
-          end,
+          N = if (Esize =:= 64) -> 1;
+                 true -> 0
+              end,
           {bitmask, N, Imms, R};
-        true -> []
+         true -> []
       end
   end.
 
@@ -458,18 +453,18 @@ replicates64(_Pattern, _Number, _Size, Start) when Start >= 64 ->
   true;
 replicates64(Pattern, Number, Size, Start) ->
   Mask = ones(Size) bsl Start,
-  if ((Mask band Number) bsr Start == Pattern) ->
+  if ((Mask band Number) bsr Start =:= Pattern) ->
       replicates64(Pattern, Number, Size, Start + Size);
-    true -> false
+     true -> false
   end.
 
 %%% Count the consequent bits of a given Number that are
 %%% equal to Value, starting from the end.
 countbits(_Value, _Number, 0) -> 0;
 countbits(Value, Number, Length) ->
-  if (Number band 1 == Value) ->
+  if (Number band 1 =:= Value) ->
       1 + countbits(Value, Number bsr 1, Length - 1);
-    true -> 0
+     true -> 0
   end.
 
 %%% Create a 'shifter operand'.
@@ -486,15 +481,15 @@ imm_to_am1(Imm, _Size) when Imm < 0 -> [];
 imm_to_am1(Imm, Size) ->
   Imm64 = Imm band 16#FFFFFFFFFFFFFFFF,
   SplitImm = case Size of
-    imm12 ->
-      if (Imm64 =< 16#FFFFFF) ->
-        imm_to_am1(Imm64, 12, 16#FFF, 0);
-      true ->
-        [] % Alu's can't shift more than 12 bits.
-      end;
-    imm16 ->
-      imm_to_am1(Imm64, 16, 16#FFFF, 0)
-  end,
+               imm12 ->
+                 if (Imm64 =< 16#FFFFFF) ->
+                     imm_to_am1(Imm64, 12, 16#FFF, 0);
+                    true ->
+                     [] % Alu's can't shift more than 12 bits.
+                 end;
+               imm16 ->
+                 imm_to_am1(Imm64, 16, 16#FFFF, 0)
+             end,
   case SplitImm of
     [] -> [];
     {ShiftedImm, Shifts} -> {Size, ShiftedImm, Shifts}
@@ -503,8 +498,8 @@ imm_to_am1(Imm, Size, Mask, RotCnt) ->
   if Imm >= 0, Imm =< Mask -> {Imm, RotCnt band 3};
      true ->
       if (Imm band Mask) =/= 0 -> []; % Imm can't fit in single op
-     true ->
-      NewRotCnt = RotCnt + 1,
+         true ->
+          NewRotCnt = RotCnt + 1,
 	  NewImm = Imm bsr Size,
 	  imm_to_am1(NewImm, Size, Mask, NewRotCnt)
       end
@@ -529,29 +524,30 @@ is_shift_op(AluOp) ->
     _ -> false
   end.
 
-% 64-bit loads and stores in aarch64 will accept a 12-bit 8x scaled
-% unsigned immediate offset, meaning a range of 0 - 16#7FF8.
-% 32-bit loads and stores are 4x scaled, meaning a range
-% of 0 - 16#3FFC.
-% 16-bit loads and stores (halfwords) are 2x scaled, meaning a range
-% of 0 - 16#1FFE.
-% Byte loads and stores are unscaled, meaning a range of 0 - 16#FFF.
-% For unaligned offsets, unscaled 9-bit immediate instructions exist,
-% with a range of -256 - 255.
-% For greater ranges, we use register offset via a scratch register.
+%% 64-bit loads and stores in aarch64 will accept a 12-bit 8x scaled
+%% unsigned immediate offset, meaning a range of 0 - 16#7FF8.
+%% 32-bit loads and stores are 4x scaled, meaning a range
+%% of 0 - 16#3FFC.
+%% 16-bit loads and stores (halfwords) are 2x scaled, meaning a range
+%% of 0 - 16#1FFE.
+%% Byte loads and stores are unscaled, meaning a range of 0 - 16#FFF.
+%% For unaligned offsets, unscaled 9-bit immediate instructions exist,
+%% with a range of -256 - 255.
+%% For greater ranges, we use register offset via a scratch register.
 
 imm_to_am2(Base, Offset, Size) when is_integer(Offset) ->
   {ULim, Align} = case Size of
-    word -> {16#7FF8, 2#111};
-    int32 -> {16#3FFC, 2#11};
-    halfword -> {16#1FFE, 2#1};
-    byte -> {16#FFF, 0}
-  end,
+                    word -> {16#7FF8, 2#111};
+                    int32 -> {16#3FFC, 2#11};
+                    halfword -> {16#1FFE, 2#1};
+                    byte -> {16#FFF, 0}
+                  end,
   if (((Offset band Align) =:= 0 andalso
-       Offset >= 0 andalso Offset =< ULim) orelse
-      (Offset >= -256 andalso Offset =< 255))->
+       Offset >= 0 andalso Offset =< ULim)
+      orelse
+        (Offset >= -256 andalso Offset =< 255))->
       #am2{src=Base,offset=Offset};
-    true -> []
+     true -> []
   end.
 
 
