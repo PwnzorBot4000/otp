@@ -30,16 +30,57 @@
 #include "hipe_native_bif.h"	/* nbif_callemu() */
 #include "hipe_bif0.h"
 
-/* Flush dcache and invalidate icache for a range of addresses. */
+/* Flush dcache and invalidate icache for a range of addresses.
+ * Harvard-type architectures have separate data and instruction caches,
+ * so to execute code that previously was considered data, the data cache
+ * has to be flushed, its data written into main memory, then the instruction
+ * cache invalidated, to load the flushed data from main memory as code.
+ * Based on Cortex-A Series Programmer's Guide for ARMv8-A /
+ * Caches / Cache maintainance. */
 void hipe_flush_icache_range(void *address, unsigned int nbytes)
 {
-    register unsigned long long beg __asm__("x0") = (unsigned long long)address;
-    register unsigned long long end __asm__("x1") = (unsigned long long)address + nbytes;
-    register unsigned long long flg __asm__("x2") = 0;
-    register unsigned long long scno __asm__("x7") = 0xf0002;
-    __asm__ __volatile__("svc #0"	/* sys_cacheflush() */
-			 : "=r"(beg)
-			 : "0"(beg), "r"(end), "r"(flg), "r"(scno));
+    Uint64 beg = (Uint64)address;
+    Uint64 end = (Uint64)address + nbytes;
+    Uint64 clinesize, clinemask;
+    register Uint64 ctr;
+    register Uint64 cacheline;
+
+    /* read Cache Type Register */
+    __asm__ ("mrs %[ctr], CTR_EL0"
+			: [ctr] "=r" (ctr));
+
+    /* Flush data cache */
+
+    /* extract cache line size. Make an address mask */
+    clinesize = (4 << ((ctr >> 16) & 0xF));
+    clinemask = clinesize - 1;
+    /* get the base address of the cache line containing
+       the address we want to flush */
+    cacheline = beg & (~clinemask);
+
+    do {
+        __asm__ ("dc cvau, %[cl]"  /* flush data cache line */
+			: : [cl] "r" (cacheline));
+        cacheline += clinesize;  /* next cache line */
+    } while(cacheline < end);
+    __asm__ ("dsb ish");  /* synchronize cache */
+                         /* (waits until data flush is complete) */
+
+    /* Invalidate instruction cache */
+
+    /* extract cache line size. Make an address mask */
+    clinesize = 4 << (ctr & 0xF);
+    clinemask = clinesize - 1;
+    /* get the base address of the cache line containing
+       the address we want to invalidate */
+    cacheline = beg & (~clinemask);
+    do {
+        __asm__ ("ic ivau, %[cl]"  /* invalidate instruction cache line */
+			: : [cl] "r" (cacheline));
+        cacheline += clinesize;  /* next cache line */
+    } while(cacheline < end);
+    __asm__ ("dsb ish");  /* synchronize cache invalidation */
+    __asm__ ("isb");  /* synchronize instruction fetch */
 }
 
 void hipe_flush_icache_word(void *address)
