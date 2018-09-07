@@ -91,6 +91,18 @@ peep_list([#move{movop='mov',s=false,dst=#aarch64_temp{reg=Dst}
 
 %% XXX: Load-after-store optimisation should also be applied to RTL, where it
 %% can be more general, expose opportunities for constant propagation, etc.
+peep_list([#store{stop='strb',src=Src,am2=Mem}=Str,
+	   #load {ldop='ldrb',dst=Dst,am2=Mem} | Insns], More) ->
+  {'and', Am1} = hipe_aarch64:try_aluop_imm('and', 16#FF),
+  peep_list([#alu{aluop='and',s=false,dst=Dst,src=Src,am1=Am1}|Insns], [Str|More]);
+peep_list([#store{stop='strh',src=Src,am2=Mem}=Str,
+	   #load {ldop='ldrh',dst=Dst,am2=Mem} | Insns], More) ->
+  {'and', Am1} = hipe_aarch64:try_aluop_imm('and', 16#FFFF),
+  peep_list([#alu{aluop='and',s=false,dst=Dst,src=Src,am1=Am1}|Insns], [Str|More]);
+peep_list([#store{stop='str32',src=Src,am2=Mem}=Str,
+	   #load {ldop='ldr32',dst=Dst,am2=Mem} | Insns], More) ->
+  {'and', Am1} = hipe_aarch64:try_aluop_imm('and', 16#FFFFFFFF),
+  peep_list([#alu{aluop='and',s=false,dst=Dst,src=Src,am1=Am1}|Insns], [Str|More]);
 peep_list([#store{stop='str',src=Src,am2=Mem}=Str,
 	   #load {ldop='ldr',dst=Dst,am2=Mem} | Insns], More) ->
   peep_list([#move{movop='mov',s=false,dst=Dst,am1=Src}|Insns], [Str|More]);
