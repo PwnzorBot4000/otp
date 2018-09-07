@@ -38,6 +38,11 @@ expand_list([], Accum) ->
 
 expand_insn(I, Accum) ->
   case I of
+    %% Shifting by zero positions is disallowed in aarch64 shift instructions,
+    %% so we replace such instruction uses with a simple move.
+    #alu{aluop=Op,s=false,dst=Dst,src=Src,am1={imm6,0}} when
+        ((Op == 'lsl') orelse (Op == 'lsr') orelse (Op == 'asr')) ->
+      [#move{movop='mov',s=false,dst=Dst,am1=Src} | Accum];
     #pseudo_cb{cbop=CbOp,src=Src,true_label=TrueLab,false_label=FalseLab} ->
       [hipe_aarch64:mk_b_label(FalseLab),
        hipe_aarch64:mk_cb(CbOp, Src, TrueLab) |
