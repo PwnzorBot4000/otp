@@ -21,7 +21,7 @@ finalise(Defun, Options) ->
   Code1Rev = expand(Code0),
   Code2 = case proplists:get_bool(peephole, Options) of
 	    true -> peep(Code1Rev);
-	    false -> peep(Code1Rev, {essential, true})
+	    false -> lists:reverse(Code1Rev)
 	  end,
   Defun#defun{code=Code2}.
 
@@ -91,7 +91,7 @@ peep_list([#store{stop='str',src=Src,am2=Mem}=Str,
   peep_list([#move{movop='mov',s=false,dst=Dst,am1=Src}|Insns], [Str|More]);
 
 peep_list(Insns, [I|More]) ->
-  peep_list(Insns, [I|More], {essential, false});
+  peep_list([I|Insns], More);
 peep_list(Accum, []) ->
   Accum.
 
@@ -100,34 +100,4 @@ peep_list(Accum, []) ->
 peep_list_skip(Insns, [I|More]) ->
   peep_list([I|Insns], More);
 peep_list_skip(Accum, []) ->
-  Accum.
-
-% Peephole pass 2, optimizations essential for not crashing.
-% Enabled by default.
-
-peep(RevInsns, Options) ->
-  peep_list_skip([], RevInsns, Options).
-
-%% Shifting by zero positions is disallowed in aarch64 shift instructions,
-%% so we replace such instruction uses with a simple move.
-
-peep_list([#alu{aluop=Op,s=false,dst=Dst,
-        src=Src,am1={imm6,0}}|Insns], More,
-        {essential, _}=Options) when
-        ((Op == 'lsl') orelse (Op == 'lsr') orelse (Op == 'asr')) ->
-   peep_list([#move{movop='mov',s=false,dst=Dst,am1=Src}|Insns],
-        More, Options);
-
-peep_list(Insns, [I|More], {essential, false}) ->
-  peep_list([I|Insns], More);
-peep_list(Insns, [I|More], {essential, true}=Options) ->
-  peep_list([I|Insns], More, Options);
-peep_list(Accum, [], _Options) ->
-  Accum.
-
-peep_list_skip(Insns, [I|More], {essential, false}) ->
-  peep_list([I|Insns], More);
-peep_list_skip(Insns, [I|More], Options) ->
-  peep_list([I|Insns], More, Options);
-peep_list_skip(Accum, [], _Options) ->
   Accum.
