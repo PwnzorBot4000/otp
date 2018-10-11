@@ -155,14 +155,14 @@ mk_alu_rr(S, Dst, Src1, AluOp, Src2) ->
   case {AluOp,S} of
     {'mul',true} ->
       %% To check for overflow in 64x64->64 multiplication:
-      %% smull Dst,Src1,Src2
+      %% mul Dst,Src1,Src2
       %% smulh TmpHi,Src1,Src2
       %% asr TmpSign, Dst, #31
       %% cmp TmpSign,TmpHi
       %% [bne OverflowLabel]
       TmpHi = new_untagged_temp(),
       TmpSign = new_untagged_temp(),
-      [hipe_aarch64:mk_alu('smull', Dst, Src1, Src2),
+      [hipe_aarch64:mk_alu('mul', Dst, Src1, Src2),
        hipe_aarch64:mk_alu('smulh', TmpHi, Src1, Src2),
        hipe_aarch64:mk_alu('asr', TmpSign, Dst, {imm6, 31}),
        hipe_aarch64:mk_cmp('cmp', TmpSign, TmpHi)];

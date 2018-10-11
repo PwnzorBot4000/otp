@@ -228,6 +228,12 @@ data_reg_3src_form(Sf, Op54, Op31, Rm, O0, Ra, Rn, Rd) ->
 smaddl(Dst, Src1, Src2, SrcAdd) ->
   data_reg_3src_form(1, 2#00, 2#001, Src1, 0, SrcAdd, Src2, Dst).
 
+madd(Dst, Src1, Src2, SrcAdd) ->
+  data_reg_3src_form(1, 2#00, 2#000, Src1, 0, SrcAdd, Src2, Dst).
+
+mul({{'cond', 'al'}, {s,0}, {r, Dst}, {r, Src1}, {r, Src2}}) ->
+  madd(Dst, Src1, Src2, 31).
+
 smull({{'cond', 'al'}, {s,0}, {r, Dst}, {r, Src1}, {r, Src2}}) ->
   smaddl(Dst, Src1, Src2, 31).
 
@@ -333,6 +339,7 @@ insn_encode(Op, Opnds) ->
     'lsr' -> lsr(Opnds);
     'mov' -> mov(Opnds);
     'mvn' -> mvn(Opnds);
+    'mul' -> mul(Opnds);
     'orr' -> orr(Opnds);
     'ret' -> ret(Opnds);
     'smulh' -> smulh(Opnds);
