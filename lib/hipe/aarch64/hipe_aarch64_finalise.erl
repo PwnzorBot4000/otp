@@ -14,6 +14,7 @@
 
 -module(hipe_aarch64_finalise).
 -export([finalise/2]).
+
 -include("hipe_aarch64.hrl").
 
 finalise(Defun, Options) ->
@@ -33,8 +34,8 @@ expand_list([I|Insns], Accum) ->
 expand_list([], Accum) ->
   Accum.
 
-%%% Expand pseudos to their actual instructions.
-%%% Care! Instruction order is reversed
+%% Expand pseudos to their actual instructions.
+%% Care! Instruction order is reversed.
 
 expand_insn(I, Accum) ->
   case I of
@@ -45,21 +46,18 @@ expand_insn(I, Accum) ->
       [#move{movop='mov',s=false,dst=Dst,am1=Src} | Accum];
     #pseudo_cb{cbop=CbOp,src=Src,true_label=TrueLab,false_label=FalseLab} ->
       [hipe_aarch64:mk_b_label(FalseLab),
-       hipe_aarch64:mk_cb(CbOp, Src, TrueLab) |
-       Accum];
+       hipe_aarch64:mk_cb(CbOp, Src, TrueLab) | Accum];
     #pseudo_bc{'cond'=Cond,true_label=TrueLab,false_label=FalseLab} ->
       [hipe_aarch64:mk_b_label(FalseLab),
-       hipe_aarch64:mk_b_label(Cond, TrueLab) |
-       Accum];
-    % pseudo_blr and pseudo_bx are passed directly to assemble,
-    % where they will be translated to ret and br instructions.
+       hipe_aarch64:mk_b_label(Cond, TrueLab) | Accum];
+    %% pseudo_blr and pseudo_bx are passed directly to assemble,
+    %% where they will be translated to ret and br instructions.
     #pseudo_call{funv=FunV,sdesc=SDesc,contlab=ContLab,linkage=Linkage} ->
       [hipe_aarch64:mk_b_label(ContLab),
        case FunV of
 	 #aarch64_temp{} -> hipe_aarch64:mk_blx(FunV, SDesc);
 	 _ -> hipe_aarch64:mk_bl(FunV, SDesc, Linkage)
-       end |
-       Accum];
+       end | Accum];
     #pseudo_switch{jtab=JTab,index=Index} ->
       Am2 = hipe_aarch64:mk_am2(JTab, {Index, words}),
       [hipe_aarch64:mk_bx(JTab),
@@ -84,7 +82,6 @@ peep(RevInsns) ->
 peep_list([#b_label{'cond'='al',label=Label}
 	   | (Insns = [#label{label=Label}|_])], More) ->
   peep_list_skip(Insns, More);
-
 peep_list([#move{movop='mov',s=false,dst=#aarch64_temp{reg=Dst}
 		,am1=#aarch64_temp{reg=Dst}}|Insns], More) ->
   peep_list_skip(Insns, More);
@@ -106,7 +103,6 @@ peep_list([#store{stop='str32',src=Src,am2=Mem}=Str,
 peep_list([#store{stop='str',src=Src,am2=Mem}=Str,
 	   #load {ldop='ldr',dst=Dst,am2=Mem} | Insns], More) ->
   peep_list([#move{movop='mov',s=false,dst=Dst,am1=Src}|Insns], [Str|More]);
-
 peep_list(Insns, [I|More]) ->
   peep_list([I|Insns], More);
 peep_list(Accum, []) ->
